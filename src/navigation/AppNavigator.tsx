@@ -1,0 +1,85 @@
+import React from 'react';
+import { NavigationContainer } from '@react-navigation/native';
+import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
+import { createNativeStackNavigator } from '@react-navigation/native-stack';
+import { TransactionsScreen } from '../screens/TransactionsScreen';
+import { LinkDeviceScreen } from '../screens/LinkDeviceScreen';
+import { LinkDeviceSuccess } from '../screens/LinkDeviceSuccess';
+import { SettingsScreen } from '../screens/SettingsScreen';
+import { Ionicons } from '@expo/vector-icons';
+
+export type RootTabParamList = {
+    Transactions: undefined;
+    Link: undefined;
+    Settings: undefined;
+};
+
+export type LinkStackParamList = {
+    ScanQR: undefined;
+    LinkDeviceSuccess: {
+        title: string;
+        deviceName: string;
+        action: string;
+    };
+};
+
+const Tab = createBottomTabNavigator<RootTabParamList>();
+const LinkStack = createNativeStackNavigator<LinkStackParamList>();
+
+const LinkNavigator = () => {
+    return (
+        <LinkStack.Navigator screenOptions={{ headerShown: false }}>
+            <LinkStack.Screen name="ScanQR" component={LinkDeviceScreen} />
+            <LinkStack.Screen name="LinkDeviceSuccess" component={LinkDeviceSuccess} />
+        </LinkStack.Navigator>
+    );
+};
+
+export const AppNavigator = () => {
+    return (
+        <NavigationContainer>
+            <Tab.Navigator
+                screenOptions={({ route }) => ({
+                    tabBarIcon: ({ focused, color, size }) => {
+                        let iconName;
+
+                        if (route.name === 'Transactions') {
+                            iconName = focused ? 'list' : 'list-outline';
+                        } else if (route.name === 'Link') {
+                            iconName = focused ? 'scan' : 'scan-outline';
+                        } else if (route.name === 'Settings') {
+                            iconName = focused ? 'settings' : 'settings-outline';
+                        }
+
+                        return <Ionicons name={iconName as any} size={size} color={color} />;
+                    },
+                    tabBarActiveTintColor: '#007AFF',
+                    tabBarInactiveTintColor: 'gray',
+                    headerStyle: {
+                        backgroundColor: '#fff',
+                    },
+                    headerTintColor: '#000',
+                    headerTitleStyle: {
+                        fontWeight: 'bold',
+                    },
+                })}
+            >
+                <Tab.Screen
+                    name="Link"
+                    component={LinkNavigator}
+                    options={{
+                        headerShown: false
+                    }}
+                />
+                <Tab.Screen
+                    name="Transactions"
+                    component={TransactionsScreen}
+                />
+                <Tab.Screen
+                    name="Settings"
+                    component={SettingsScreen}
+                />
+            </Tab.Navigator>
+        </NavigationContainer>
+    );
+}; 

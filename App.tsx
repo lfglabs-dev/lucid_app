@@ -1,20 +1,21 @@
-import { StatusBar } from 'expo-status-bar';
-import { StyleSheet, Text, View } from 'react-native';
+import React, { useEffect } from 'react';
+import { AppNavigator } from './src/navigation/AppNavigator';
+import { getOrRefreshAuth } from './src/services/auth';
 
 export default function App() {
-  return (
-    <View style={styles.container}>
-      <Text>Open up App.tsx to start working on your app!</Text>
-      <StatusBar style="auto" />
-    </View>
-  );
-}
+  useEffect(() => {
+    // Initialize auth when app starts
+    const initAuth = async () => {
+      try {
+        await getOrRefreshAuth();
+        console.log('Auth initialized successfully');
+      } catch (error) {
+        console.error('Failed to initialize auth:', error);
+      }
+    };
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#fff',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-});
+    initAuth();
+  }, []);
+
+  return <AppNavigator />;
+}
