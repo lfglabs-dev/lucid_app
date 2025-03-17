@@ -6,37 +6,66 @@ import { fileURLToPath } from 'url';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-const ALCHEMY_RPC_URL = 'https://eth-mainnet.g.alchemy.com/v2/KmwG40UUX-Ih0ngWRLqV8nebiDIpcstE';
-// const ALCHEMY_RPC_URL = 'https://docs-demo.quiknode.pro/';
+const RPC_URL = 'https://docs-demo.quiknode.pro/';
 
 const rpcPayload = {
-    id: 1,
-    jsonrpc: '2.0',
-    method: 'eth_call',
+    jsonrpc: "2.0",
+    method: "eth_simulateV1",
     params: [
         {
-            "data": "0x",
-            "from": "0x88ffb774b8583c1c9a2b71b7391861c0be253993",
-            "to": "0x676ad4839a3cbb3739000153e4802bf4ce6aef3f",
-            "value": "0xde0b6b3a7640000"
+            blockStateCalls: [
+                {
+                    blockOverrides: {
+                        baseFeePerGas: "0x9"
+                    },
+                    stateOverrides: {
+                        "0x90bc0b43fa89027b2f2df93fa7028357370a026a": {
+                            balance: "0x4a817c420"
+                        }
+                    },
+                    calls: [
+                        {
+                            chainId: "0x2105", // 8453 in hex
+                            from: "0x90bc0b43fa89027b2f2df93fa7028357370a026a",
+                            to: "0x833589fcd6edb6e08f4c7c32d4f71b54bda02913",
+                            value: "0x0",
+                            data: "0xa9059cbb000000000000000000000000ff5361f2d4ab046409ace2e69926d7fac78b2be700000000000000000000000000000000000000000000000000000000000f4240",
+                            gas: "0x17114",
+                            maxFeePerGas: "0x33e140",
+                            maxPriorityFeePerGas: "0x33e140",
+                            nonce: "0x3c"
+                        }
+                    ]
+                }
+            ],
+            validation: true,
+            traceTransfers: true
         },
-        'latest'
-    ]
+        "latest"
+    ],
+    id: 1
 };
 
 export async function simulateRpcCall() {
     try {
         console.log('\n=== Starting RPC Simulation ===');
-        console.log('\nEndpoint:', ALCHEMY_RPC_URL);
+        console.log('\nEndpoint:', RPC_URL);
         console.log('\nRequest payload:', JSON.stringify(rpcPayload, null, 2));
         console.log('\nTransaction details:');
-        console.log('- From:', rpcPayload.params[0].from);
-        console.log('- To:', rpcPayload.params[0].to);
-        console.log('- Value:', parseInt(rpcPayload.params[0].value, 16) / 1e18, 'ETH');
+        const tx = rpcPayload.params[0].blockStateCalls[0].calls[0];
+        console.log('- Chain ID:', parseInt(tx.chainId, 16));
+        console.log('- From:', tx.from);
+        console.log('- To:', tx.to);
+        console.log('- Value:', parseInt(tx.value, 16) / 1e18, 'ETH');
+        console.log('- Gas:', parseInt(tx.gas, 16));
+        console.log('- Max Fee Per Gas:', parseInt(tx.maxFeePerGas, 16));
+        console.log('- Max Priority Fee Per Gas:', parseInt(tx.maxPriorityFeePerGas, 16));
+        console.log('- Nonce:', parseInt(tx.nonce, 16));
+        console.log('- Data:', tx.data);
         console.log('- State override: Added balance to from address');
         
         console.log('\nSending request...');
-        const response = await fetch(ALCHEMY_RPC_URL, {
+        const response = await fetch(RPC_URL, {
             method: 'POST',
             headers: {
                 'accept': 'application/json',
@@ -67,8 +96,8 @@ export async function simulateRpcCall() {
             request: rpcPayload,
             response: result,
             timestamp: new Date().toISOString(),
-            provider: 'quicknode',
-            network: 'mainnet',
+            provider: 'quiknode',
+            network: 'base',
             debug: {
                 responseStatus: response.status,
                 responseHeaders: response.headers.raw()

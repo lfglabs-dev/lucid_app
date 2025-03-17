@@ -9,6 +9,7 @@ interface AppState {
   toggleSafeHashCheck: () => void;
   addPairedDevice: (token: string, name: string) => void;
   removePairedDevice: (id: string) => void;
+  updateTransactionStatus: (id: string, status: Transaction['status']) => void;
 }
 
 export const useStore = create<AppState>((set) => ({
@@ -53,5 +54,12 @@ export const useStore = create<AppState>((set) => ({
         ...state.settings,
         pairedDevices: state.settings.pairedDevices.filter((d) => d.id !== id),
       },
+    })),
+
+  updateTransactionStatus: (id: string, status: Transaction['status']) => 
+    set((state) => ({
+      transactions: state.transactions.map(tx => 
+        tx.id === id ? { ...tx, status } : tx
+      ),
     })),
 })); 

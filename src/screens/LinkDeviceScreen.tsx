@@ -7,6 +7,7 @@ import { API_BASE_URL } from '../constants/api';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { LinkStackParamList } from '../navigation/AppNavigator';
+import { SuccessView } from '../components/SuccessView';
 
 type NavigationProp = NativeStackNavigationProp<LinkStackParamList>;
 
@@ -14,6 +15,8 @@ export const LinkDeviceScreen = () => {
     const { addPairedDevice } = useStore();
     const [permission, requestPermission] = useCameraPermissions();
     const [isProcessing, setIsProcessing] = useState(false);
+    const [showSuccess, setShowSuccess] = useState(false);
+    const [deviceName, setDeviceName] = useState('');
     // Ref for immediate checks
     const processingRef = useRef(false);
     const navigation = useNavigation<NavigationProp>();
@@ -105,12 +108,10 @@ export const LinkDeviceScreen = () => {
             // Add the paired device with the token
             addPairedDevice(linkToken, qrData.name || 'Chrome Extension');
 
-            // Navigate to success screen with device name
-            navigation.navigate('LinkDeviceSuccess', {
-                title: 'Device Connected!',
-                deviceName: qrData.name || 'Chrome Extension', // fallback if name not provided
-                action: 'connect'
-            });
+            // Set device name and show success view
+            setDeviceName(qrData.name || 'Chrome Extension');
+            setShowSuccess(true);
+
             // Reset states only after successful linking
             setIsProcessing(false);
             processingRef.current = false;
@@ -140,6 +141,16 @@ export const LinkDeviceScreen = () => {
             );
         }
     };
+
+    if (showSuccess) {
+        return (
+            <SuccessView
+                title="Device Connected!"
+                description={deviceName}
+                navigateToTab="Transactions"
+            />
+        );
+    }
 
     if (!permission) {
         return (

@@ -4,9 +4,10 @@ import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { TransactionsScreen } from '../screens/TransactionsScreen';
 import { LinkDeviceScreen } from '../screens/LinkDeviceScreen';
-import { LinkDeviceSuccess } from '../screens/LinkDeviceSuccess';
 import { SettingsScreen } from '../screens/SettingsScreen';
+import { TransactionSimulation } from '../screens/TransactionSimulation';
 import { Ionicons } from '@expo/vector-icons';
+import { Transaction } from '../types';
 
 export type RootTabParamList = {
     Transactions: undefined;
@@ -16,22 +17,42 @@ export type RootTabParamList = {
 
 export type LinkStackParamList = {
     ScanQR: undefined;
-    LinkDeviceSuccess: {
-        title: string;
-        deviceName: string;
-        action: string;
-    };
+};
+
+export type TransactionStackParamList = {
+    TransactionsList: undefined;
+    TransactionSimulation: { transaction: Transaction };
 };
 
 const Tab = createBottomTabNavigator<RootTabParamList>();
 const LinkStack = createNativeStackNavigator<LinkStackParamList>();
+const TransactionStack = createNativeStackNavigator<TransactionStackParamList>();
 
 const LinkNavigator = () => {
     return (
         <LinkStack.Navigator screenOptions={{ headerShown: false }}>
             <LinkStack.Screen name="ScanQR" component={LinkDeviceScreen} />
-            <LinkStack.Screen name="LinkDeviceSuccess" component={LinkDeviceSuccess} />
         </LinkStack.Navigator>
+    );
+};
+
+const TransactionNavigator = () => {
+    return (
+        <TransactionStack.Navigator>
+            <TransactionStack.Screen
+                name="TransactionsList"
+                component={TransactionsScreen}
+                options={{ title: 'Transactions' }}
+            />
+            <TransactionStack.Screen
+                name="TransactionSimulation"
+                component={TransactionSimulation}
+                options={{
+                    title: 'Transaction Simulation',
+                    presentation: 'modal'
+                }}
+            />
+        </TransactionStack.Navigator>
     );
 };
 
@@ -73,7 +94,10 @@ export const AppNavigator = () => {
                 />
                 <Tab.Screen
                     name="Transactions"
-                    component={TransactionsScreen}
+                    component={TransactionNavigator}
+                    options={{
+                        headerShown: false
+                    }}
                 />
                 <Tab.Screen
                     name="Settings"

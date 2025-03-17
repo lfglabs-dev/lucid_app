@@ -1,44 +1,60 @@
 import React, { useEffect, useRef } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet } from 'react-native';
 import LottieView from 'lottie-react-native';
 import { useNavigation } from '@react-navigation/native';
-import type { NativeStackScreenProps, NativeStackNavigationProp } from '@react-navigation/native-stack';
+import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { CompositeNavigationProp } from '@react-navigation/native';
 import type { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
-import { LinkStackParamList, RootTabParamList } from '../navigation/AppNavigator';
+import { RootTabParamList } from '../navigation/AppNavigator';
 
 type NavigationProp = CompositeNavigationProp<
-    NativeStackNavigationProp<LinkStackParamList, 'LinkDeviceSuccess'>,
+    NativeStackNavigationProp<any>,
     BottomTabNavigationProp<RootTabParamList>
 >;
 
-type Props = NativeStackScreenProps<LinkStackParamList, 'LinkDeviceSuccess'>;
+interface SuccessViewProps {
+    title: string;
+    description: string;
+    onComplete?: () => void;
+    autoNavigate?: boolean;
+    navigateToTab?: keyof RootTabParamList;
+    delay?: number;
+}
 
-export const LinkDeviceSuccess = ({ route }: Props) => {
-    const { title, deviceName } = route.params;
+export const SuccessView = ({
+    title,
+    description,
+    onComplete,
+    autoNavigate = true,
+    navigateToTab = 'Transactions',
+    delay = 1500
+}: SuccessViewProps) => {
     const navigation = useNavigation<NavigationProp>();
     const hasNavigated = useRef(false);
 
     useEffect(() => {
-        // Auto navigate to transactions after 3 seconds
+        if (!autoNavigate) return;
+
         const timer = setTimeout(() => {
             if (!hasNavigated.current) {
                 hasNavigated.current = true;
-                // Navigate to the Transactions tab
-                navigation.getParent()?.reset({
-                    index: 1, // Index 1 is the Transactions tab
-                    routes: [
-                        { name: 'Link' },
-                        { name: 'Transactions' },
-                        { name: 'Settings' }
-                    ],
-                });
+                if (onComplete) {
+                    onComplete();
+                } else {
+                    navigation.getParent()?.reset({
+                        index: 1,
+                        routes: [
+                            { name: 'Link' },
+                            { name: navigateToTab },
+                            { name: 'Settings' }
+                        ],
+                    });
+                }
             }
-        }, 2000);
+        }, delay);
 
         return () => clearTimeout(timer);
-    }, [navigation]);
-
+    }, [navigation, autoNavigate, onComplete, navigateToTab, delay]);
 
     return (
         <View style={styles.container}>
@@ -50,7 +66,7 @@ export const LinkDeviceSuccess = ({ route }: Props) => {
                     style={styles.animation}
                 />
                 <Text style={styles.title}>{title}</Text>
-                <Text style={styles.deviceName}>{deviceName}</Text>
+                <Text style={styles.description}>{description}</Text>
             </View>
         </View>
     );
@@ -61,6 +77,7 @@ const styles = StyleSheet.create({
         flex: 1,
         backgroundColor: '#fff',
         justifyContent: 'space-between',
+        padding: 20,
     },
     content: {
         flex: 1,
@@ -78,11 +95,10 @@ const styles = StyleSheet.create({
         marginTop: 20,
         textAlign: 'center',
     },
-    deviceName: {
-        color: '#56CA77', // Green color matching the animation
+    description: {
+        color: '#56CA77',
         fontSize: 18,
         marginTop: 10,
         textAlign: 'center',
     },
-});
-
+}); 
