@@ -4,14 +4,18 @@ import {
     Text,
     StyleSheet,
 } from 'react-native';
+import { formatAddress } from '../services/utils';
 
 interface TransactionVerificationViewProps {
     messageHash: string;
+    domainHash: string;
 }
 
-export const TransactionVerificationView = ({ messageHash }: TransactionVerificationViewProps) => {
+export const TransactionVerificationView = ({ messageHash, domainHash }: TransactionVerificationViewProps) => {
     const firstFour = messageHash.slice(0, 6); // Including '0x'
     const lastFour = messageHash.slice(-4);
+    const firstFourDomain = domainHash.slice(0, 6); // Including '0x'
+    const lastFourDomain = domainHash.slice(-4);
 
     return (
         <>
@@ -23,15 +27,11 @@ export const TransactionVerificationView = ({ messageHash }: TransactionVerifica
             <View style={styles.section}>
                 <Text style={styles.sectionTitle}>Domain Hash</Text>
                 <View style={styles.hashContainer}>
-                    <Text style={styles.hashHighlightMessageHash}>{firstFour}</Text>
-                    <Text style={styles.hashText}>...</Text>
-                    <Text style={styles.hashHighlightMessageHash}>{lastFour}</Text>
+                    <Text style={styles.hashHighlightMessageHash}>{formatAddress(messageHash)}</Text>
                 </View>
                 <Text style={styles.sectionTitle}>Message Hash</Text>
                 <View style={styles.hashContainer}>
-                    <Text style={styles.hashHighlightDomainHash}>{firstFour}</Text>
-                    <Text style={styles.hashText}>...</Text>
-                    <Text style={styles.hashHighlightDomainHash}>{lastFour}</Text>
+                    <Text style={styles.hashHighlightMessageHash}>{formatAddress(messageHash)}</Text>
                 </View>
             </View>
         </>

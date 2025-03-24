@@ -7,8 +7,7 @@
     "start": "expo start",
     "android": "expo start --android",
     "ios": "expo start --ios",
-    "web": "expo start --web",
-    "simulate": "node src/scripts/simulate.js"
+    "web": "expo start --web"
   },
   "dependencies": {
     "@expo/vector-icons": "^14.0.4",
@@ -17,6 +16,7 @@
     "@react-navigation/native": "^7.0.15",
     "@react-navigation/native-stack": "^7.2.1",
     "dotenv": "^16.4.7",
+    "ethers": "^6.13.5",
     "expo": "~52.0.38",
     "expo-camera": "^16.0.18",
     "expo-constants": "^17.0.8",
@@ -33,6 +33,7 @@
   "devDependencies": {
     "@babel/core": "^7.25.2",
     "@types/react": "~18.3.12",
+    "prettier": "^3.5.3",
     "typescript": "^5.3.3"
   },
   "private": true

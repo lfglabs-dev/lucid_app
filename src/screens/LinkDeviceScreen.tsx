@@ -1,25 +1,17 @@
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useState, useRef } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Alert, Dimensions } from 'react-native';
 import { CameraView, useCameraPermissions } from 'expo-camera';
-import { useStore } from '../store/useStore';
 import { getCurrentAuthToken } from '../services/auth';
 import { API_BASE_URL } from '../constants/api';
-import { useNavigation } from '@react-navigation/native';
-import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { LinkStackParamList } from '../navigation/AppNavigator';
 import { SuccessView } from '../components/SuccessView';
 
-type NavigationProp = NativeStackNavigationProp<LinkStackParamList>;
-
 export const LinkDeviceScreen = () => {
-    const { addPairedDevice } = useStore();
     const [permission, requestPermission] = useCameraPermissions();
     const [isProcessing, setIsProcessing] = useState(false);
     const [showSuccess, setShowSuccess] = useState(false);
     const [deviceName, setDeviceName] = useState('');
     // Ref for immediate checks
     const processingRef = useRef(false);
-    const navigation = useNavigation<NavigationProp>();
 
     const approveLink = async (linkToken: string) => {
         try {
@@ -28,7 +20,7 @@ export const LinkDeviceScreen = () => {
             if (!authToken) {
                 throw new Error('No auth token available');
             }
-            console.log('Body:', JSON.stringify({ token: linkToken }));
+            console.log('[LinkDevice] Approving link with token:', linkToken);
 
             const response = await fetch(`${API_BASE_URL}/approve_link`, {
                 method: 'POST',
@@ -41,7 +33,7 @@ export const LinkDeviceScreen = () => {
 
             if (!response.ok) {
                 const errorData = await response.text();
-                console.error('API Error response:', {
+                console.error('[LinkDevice] API Error response:', {
                     status: response.status,
                     statusText: response.statusText,
                     body: errorData
@@ -49,12 +41,14 @@ export const LinkDeviceScreen = () => {
                 throw new Error(`Failed to link token: ${response.status} ${response.statusText}`);
             }
 
+            const responseData = await response.json();
+            console.log('[LinkDevice] Link approved successfully:', responseData);
             return true;
         } catch (error) {
             if (error instanceof TypeError && error.message === 'Network request failed') {
-                console.error('Network error - Is the server running at', API_BASE_URL, '?');
+                console.error('[LinkDevice] Network error - Is the server running at', API_BASE_URL, '?');
             }
-            console.error('Error linking token:', {
+            console.error('[LinkDevice] Error linking token:', {
                 error,
                 message: error instanceof Error ? error.message : 'Unknown error',
                 stack: error instanceof Error ? error.stack : undefined
@@ -64,9 +58,9 @@ export const LinkDeviceScreen = () => {
     };
 
     const handleBarCodeScanned = async ({ data }: { data: string }) => {
-        // Synchronous check and set using ref
+        // Don't process if already processing
         if (processingRef.current) {
-            console.log('Ignoring scan - already processing');
+            console.log('[LinkDevice] Ignoring scan - already processing');
             return;
         }
         processingRef.current = true;
@@ -74,39 +68,31 @@ export const LinkDeviceScreen = () => {
 
         try {
             const qrData = JSON.parse(data);
-            console.log('Parsed QR data:', qrData);
 
             // Validate required fields
             if (!qrData.app || !qrData.token) {
-                console.error('Missing required fields:', {
+                console.error('[LinkDevice] Missing required fields:', {
                     hasApp: !!qrData.app,
-                    hasToken: !!qrData.token,
-                    qrData
+                    hasToken: !!qrData.token
                 });
                 throw new Error('Invalid QR code format');
             }
 
             // Extract the actual token (remove 'token-' prefix)
             const linkToken = qrData.token.replace('token-', '');
-            console.log('Extracted token:', linkToken);
 
             if (!linkToken) {
-                console.error('Token is empty after prefix removal');
+                console.error('[LinkDevice] Token is empty after prefix removal');
                 throw new Error('Invalid token format');
             }
 
             // Link the token with the API
-            console.log('Attempting to link token with API...');
             const isLinked = await approveLink(linkToken);
 
             if (!isLinked) {
-                console.error('API linking failed');
+                console.error('[LinkDevice] API linking failed');
                 throw new Error('Failed to link token with server');
             }
-
-            console.log('Token linked successfully, adding paired device ', qrData.name);
-            // Add the paired device with the token
-            addPairedDevice(linkToken, qrData.name || 'Chrome Extension');
 
             // Set device name and show success view
             setDeviceName(qrData.name || 'Chrome Extension');
@@ -117,28 +103,10 @@ export const LinkDeviceScreen = () => {
             processingRef.current = false;
 
         } catch (error) {
-            console.error('Error in QR code processing:', {
-                error,
-                message: error instanceof Error ? error.message : 'Unknown error',
-                stack: error instanceof Error ? error.stack : undefined
-            });
-
-            // Reset states before showing alert
+            console.error('[LinkDevice] Error processing QR code:', error);
             setIsProcessing(false);
             processingRef.current = false;
-
-            Alert.alert(
-                'Invalid QR Code',
-                'Please scan a valid QR code from the Chrome extension',
-                [
-                    {
-                        text: 'OK',
-                        onPress: () => {
-                            console.log('Alert dismissed');
-                        }
-                    }
-                ]
-            );
+            Alert.alert('Error', 'Failed to process QR code. Please try again.');
         }
     };
 

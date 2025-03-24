@@ -34,7 +34,8 @@ module.exports = {
       favicon: "./assets/favicon.png"
     },
     extra: {
-      apiBaseUrl: process.env.API_BASE_URL,
+      apiBaseUrl: process.env.API_BASE_URL || "http://192.168.110.255:8080",
+      coinmarketcapApiKey: process.env.COINMARKETCAP_API_KEY || "",
       eas: {
         projectId: "your-project-id"
       }

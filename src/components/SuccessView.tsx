@@ -27,7 +27,7 @@ export const SuccessView = ({
     onComplete,
     autoNavigate = true,
     navigateToTab = 'Transactions',
-    delay = 1500
+    delay = 2500
 }: SuccessViewProps) => {
     const navigation = useNavigation<NavigationProp>();
     const hasNavigated = useRef(false);

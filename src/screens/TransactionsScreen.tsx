@@ -1,82 +1,79 @@
-import React from 'react';
-import {
-    View,
-    FlatList,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-} from 'react-native';
+import React, { useEffect } from 'react';
+import { View, FlatList, StyleSheet } from 'react-native';
 import { useStore } from '../store/useStore';
-import { Transaction } from '../types';
-import { useNavigation } from '@react-navigation/native';
-import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { TransactionStackParamList } from '../navigation/AppNavigator';
+import { getOrRefreshAuth } from '../services/auth';
+import { CustomRefreshControl } from '../components/CustomRefreshControl';
+import { TransactionItem } from '../components/TransactionItem';
+import { LoadingState } from '../components/LoadingState';
+import { ErrorState } from '../components/ErrorState';
+import { EmptyState } from '../components/EmptyState';
 
-type NavigationProp = NativeStackNavigationProp<TransactionStackParamList>;
+export const TransactionsScreen = () => {
+    const { transactions, fetchTransactions } = useStore();
+    const [isLoading, setIsLoading] = React.useState(true);
+    const [error, setError] = React.useState<string | null>(null);
+    const [refreshing, setRefreshing] = React.useState(false);
 
-const getStatusEmoji = (status: Transaction['status']) => {
-    switch (status) {
-        case 'signed':
-            return '✅';
-        case 'rejected':
-            return '❌';
-        case 'pending':
-        default:
-            return '⚠️';
-    }
-};
+    const loadPastTransactions = async () => {
 
-const TransactionItem = ({ item }: { item: Transaction }) => {
-    const navigation = useNavigation<NavigationProp>();
-    const isPending = item.status === 'pending';
-
-    const handlePress = () => {
-        if (isPending) {
-            navigation.navigate('TransactionSimulation', { transaction: item });
+        setIsLoading(true);
+        setError(null);
+        try {
+            const token = await getOrRefreshAuth();
+            if (!token) {
+                setError('No device paired. Please pair a device first.');
+                return;
+            }
+            console.log('[Transactions] Loading transactions with token:', token.data.jwt.slice(0, 10) + '...');
+            await fetchTransactions(token.data.jwt);
+        } catch (error) {
+            console.error('[Transactions] Error loading transactions:', error);
+            setError(error instanceof Error ? error.message : 'Failed to load transactions');
+        } finally {
+            setIsLoading(false);
+            setRefreshing(false);
         }
     };
 
-    return (
-        <TouchableOpacity
-            style={[
-                styles.transactionItem,
-                isPending && styles.pendingTransaction
-            ]}
-            onPress={handlePress}
-        >
-            <View style={styles.transactionHeader}>
-                <Text style={[
-                    styles.title,
-                    isPending && styles.pendingTitle
-                ]}>
-                    {item.title}
-                </Text>
-                <Text style={styles.timestamp}>
-                    {new Date(item.timestamp).toLocaleDateString()}
-                </Text>
-            </View>
-            <Text style={styles.icon}>{getStatusEmoji(item.status)}</Text>
-        </TouchableOpacity>
-    );
-};
+    useEffect(() => {
+        loadPastTransactions();
+    }, []);
 
-export const TransactionsScreen = () => {
-    const { transactions } = useStore();
+    const onRefresh = React.useCallback(() => {
+        setRefreshing(true);
+        loadPastTransactions();
+    }, []);
 
-    // Sort transactions by timestamp in descending order
-    const sortedTransactions = [...transactions].sort((a, b) =>
-        new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
-    );
+
+    if (isLoading && !refreshing) {
+        return <LoadingState />;
+    }
+
+    if (error) {
+        return <ErrorState message={error} />;
+    }
+
+    if (transactions.length === 0) {
+        return <EmptyState refreshing={refreshing} onRefresh={onRefresh} />;
+    }
 
     return (
         <View style={styles.container}>
             <FlatList
-                data={sortedTransactions}
-                keyExtractor={(item) => item.id}
+                data={transactions}
+                keyExtractor={(item) => item.id.toString()}
                 renderItem={({ item }) => (
-                    <TransactionItem item={item} />
+                    <TransactionItem item={item} isRefreshing={refreshing} />
                 )}
                 contentContainerStyle={styles.listContent}
+                refreshControl={
+                    <CustomRefreshControl
+                        refreshing={refreshing}
+                        onRefresh={onRefresh}
+                        tintColor="#0000ff"
+                        colors={['#0000ff']}
+                    />
+                }
             />
         </View>
     );
@@ -89,44 +86,5 @@ const styles = StyleSheet.create({
     },
     listContent: {
         padding: 16,
-    },
-    transactionItem: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        padding: 16,
-        backgroundColor: '#fff',
-        borderRadius: 8,
-        marginBottom: 8,
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.1,
-        shadowRadius: 4,
-        elevation: 3,
-    },
-    pendingTransaction: {
-        backgroundColor: '#FFF9E6',
-        borderWidth: 1,
-        borderColor: '#FFB800',
-    },
-    transactionHeader: {
-        flex: 1,
-    },
-    title: {
-        fontSize: 16,
-        fontWeight: 'bold',
-        marginBottom: 4,
-    },
-    pendingTitle: {
-        color: '#B25B00',
-        fontSize: 18,
-    },
-    timestamp: {
-        fontSize: 12,
-        color: '#999',
-    },
-    icon: {
-        fontSize: 20,
-        marginLeft: 16,
     },
 });
