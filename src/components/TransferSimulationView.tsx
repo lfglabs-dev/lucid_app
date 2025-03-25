@@ -3,7 +3,6 @@ import {
     View,
     Text,
     StyleSheet,
-    ImageSourcePropType,
     Image,
     ActivityIndicator,
 } from 'react-native';
@@ -11,27 +10,14 @@ import { TokenRow } from './TokenRow';
 import { ENSAddress } from './ENSAddress';
 import { TokenInfoService } from '../services/tokenInfo';
 import { TokenInfo } from '../types';
+import { SimulationData } from '../services/simulation';
 
-type SimulationData = {
-    type: string;
-    contractAddress: string;
-    amount: string;
-    from: string;
-    to: string;
-    changes: Array<{
-        type: 'decrease' | 'increase';
-        assetIcon: ImageSourcePropType;
-        assetSymbol: string;
-        amount: string;
-    }>;
-    chainId: string;
-};
 
-interface TransactionSimulationViewProps {
+interface TransferSimulationViewProps {
     simulationData: SimulationData;
 }
 
-export const TransactionSimulationView = ({ simulationData }: TransactionSimulationViewProps) => {
+export const TransferSimulationView = ({ simulationData }: TransferSimulationViewProps) => {
     const [chainInfo, setChainInfo] = useState<TokenInfo | null>(null);
     const [tokenInfo, setTokenInfo] = useState<TokenInfo | null>(null);
     const [isLoading, setIsLoading] = useState(true);

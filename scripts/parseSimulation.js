@@ -35,7 +35,7 @@ async function parseSimulation() {
         console.log('Simulating token transfer on Ethereum:')
         console.log('- From:', tx.from)
         console.log('- To:', recipient)
-        console.log('- Amount:', ethers.utils.formatUnits(amount, 18), 'tokens')
+        console.log('- Amount:', ethers.formatUnits(amount, 18), 'tokens')
         console.log('- Gas Limit:', parseInt(tx.gas, 16))
         console.log('- Max Fee:', parseInt(tx.maxFeePerGas, 16), 'wei')
         console.log('\nSending request to simulate...')
@@ -101,7 +101,7 @@ async function parseSimulation() {
                         
                         console.log(`From: ${from}`)
                         console.log(`To: ${to}`)
-                        console.log(`Amount: ${ethers.utils.formatUnits(amount, 18)} tokens`)
+                        console.log(`Amount: ${ethers.formatUnits(amount, 18)} tokens`)
                     } else {
                         console.log(`\nOther Event ${logIndex + 1}:`)
                         console.log(`Topics: ${log.topics.join(', ')}`)

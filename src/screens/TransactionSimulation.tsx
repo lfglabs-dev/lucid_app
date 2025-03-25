@@ -11,13 +11,9 @@ import { TransactionStackParamList } from '../navigation/AppNavigator';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useStore } from '../store/useStore';
 import { ConfirmVerification } from '../components/ConfirmVerification';
-import { TransactionSimulationView } from '../components/TransactionSimulationView';
-import { TransactionVerificationView } from '../components/TransactionVerificationView';
+import { TransactionVerificationsView } from '../components/TransactionVerificationsView';
 import { SuccessView } from '../components/SuccessView';
-import { ParserRegistry } from '../services/parsers/ParserRegistry';
-import { TokenInfoService } from '../services/tokenInfo';
-import { formatAddress } from '../services/utils';
-import { ParsedTransaction } from '../services/parsers/BaseParser';
+import { SimulationData, SimulationParser } from '../services/simulation';
 
 type NavigationProp = NativeStackNavigationProp<TransactionStackParamList>;
 
@@ -27,128 +23,66 @@ type RouteParams = {
     };
 };
 
-type Step = 'simulation' | 'verification' | 'success';
+export type VerificationStep = 'simulation' | 'verification' | 'success';
 
 export const TransactionSimulation = () => {
     const route = useRoute<RouteProp<RouteParams, 'TransactionSimulation'>>();
     const navigation = useNavigation<NavigationProp>();
     const { transaction } = route.params;
     const { updateTransactionStatus } = useStore();
-    const [currentStep, setCurrentStep] = useState<Step>('simulation');
-    const [simulationData, setSimulationData] = useState<any>(null);
+    const [currentStep, setCurrentStep] = useState<VerificationStep>('simulation');
+    const [simulationData, setSimulationData] = useState<SimulationData | null>(null);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
 
-    const parserRegistry = new ParserRegistry();
+    console.log('TransactionSimulation mounted with transaction:', {
+        id: transaction.id,
+        from: transaction.from,
+        to: transaction.to,
+        chainId: transaction.chainId,
+        dataLength: transaction.data?.length
+    });
+
+    const simulationParser = new SimulationParser();
 
     useEffect(() => {
         const simulateTransaction = async () => {
             try {
+                console.log('Starting transaction simulation process...');
                 setIsLoading(true);
                 setError(null);
 
                 // Validate transaction data
                 if (!transaction.data) {
+                    console.error('Transaction data is missing');
                     throw new Error('Transaction data is missing');
                 }
 
-                // Parse the transaction data using the registry
-                const parsedInput = await parserRegistry.parseTransaction(
-                    transaction.chainId,
-                    transaction.to,
-                    transaction.data
-                );
-
-                if (!parsedInput.success) {
-                    throw new Error(parsedInput.error || 'Invalid transaction data');
-                }
-
-                const tx = {
+                console.log('Calling simulation parser...');
+                const result = await simulationParser.simulateSafeTransaction({
                     from: transaction.from,
                     to: transaction.to,
                     data: transaction.data,
                     value: transaction.value,
                     gas: transaction.gas,
                     maxFeePerGas: transaction.maxFeePerGas,
-                    maxPriorityFeePerGas: transaction.maxPriorityFeePerGas
-                };
-
-                // Prepare RPC payload
-                const rpcPayload = {
-                    jsonrpc: "2.0",
-                    method: "eth_simulateV1",
-                    params: [
-                        {
-                            blockStateCalls: [
-                                {
-                                    blockOverrides: {
-                                        baseFeePerGas: transaction.maxFeePerGas
-                                    },
-                                    calls: [tx]
-                                }
-                            ],
-                            validation: true,
-                            traceTransfers: true
-                        },
-                        "latest"
-                    ],
-                    id: 1
-                };
-
-                // Make the RPC call
-                const response = await fetch('https://docs-demo.quiknode.pro/', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify(rpcPayload),
+                    maxPriorityFeePerGas: transaction.maxPriorityFeePerGas,
+                    chainId: transaction.chainId
                 });
 
-                if (!response.ok) {
-                    const errorText = await response.text();
-                    throw new Error('RPC simulation failed: ' + errorText);
+                if (!result) {
+                    console.error('No token transfers found in transaction');
+                    throw new Error('No token transfers found in transaction');
                 }
 
-                const result = await response.json();
-                if (result.error) {
-                    throw new Error(result.error.message);
-                }
-
-                // Get the appropriate parser and parse the simulation response
-                const parser = parserRegistry.getParserForTransaction(transaction.data);
-                if (!parser) {
-                    throw new Error('No parser found for transaction type');
-                }
-
-                const parsedSimulation = await parserRegistry.parseSimulationResponse(parser, result, transaction.chainId);
-                if (!parsedSimulation.success) {
-                    throw new Error(parsedSimulation.error || 'Simulation failed');
-                }
-
-                // Use the parsed input for display as it contains more information
-                const newSimulationData = {
-                    type: parsedInput.type === 'ERC20_TRANSFER' ? 'Send token' : 'Approve token',
-                    contractAddress: parsedInput.token?.address,
-                    amount: parsedInput.amount,
-                    from: transaction.from,
-                    to: parsedInput.recipient,
-                    changes: [
-                        {
-                            type: 'decrease' as const,
-                            assetIcon: parsedInput.token?.icon,
-                            assetSymbol: parsedInput.token?.symbol,
-                            amount: parsedInput.amount,
-                            holder: formatAddress(transaction.from),
-                        }
-                    ],
-                    chainId: transaction.chainId
-                };
-                setSimulationData(newSimulationData);
+                console.log('Simulation successful, setting data:', result);
+                setSimulationData(result);
 
             } catch (err) {
                 console.error('Simulation error:', err);
                 setError(err instanceof Error ? err.message : 'Failed to simulate transaction');
             } finally {
+                console.log('Simulation process completed');
                 setIsLoading(false);
             }
         };
@@ -157,20 +91,24 @@ export const TransactionSimulation = () => {
     }, [transaction]);
 
     const handleConfirm = () => {
+        console.log('Confirm button pressed, current step:', currentStep);
         if (currentStep === 'simulation') {
             setCurrentStep('verification');
         } else if (currentStep === 'verification') {
+            console.log('Updating transaction status to signed');
             updateTransactionStatus(transaction.id, 'signed');
             setCurrentStep('success');
         }
     };
 
     const handleDecline = () => {
+        console.log('Decline button pressed, updating status to rejected');
         updateTransactionStatus(transaction.id, 'rejected');
         navigation.goBack();
     };
 
     const handleSuccessComplete = () => {
+        console.log('Success view completed, navigating back');
         navigation.goBack();
     };
 
@@ -184,7 +122,7 @@ export const TransactionSimulation = () => {
         );
     }
 
-    if (isLoading) {
+    if (isLoading || !simulationData) {
         return (
             <View style={styles.container}>
                 <Text style={styles.loadingText}>Simulating transaction...</Text>
@@ -203,13 +141,8 @@ export const TransactionSimulation = () => {
     return (
         <View style={styles.container}>
             <ScrollView style={styles.scrollView}>
-                {currentStep === 'simulation' ? (
-                    <TransactionSimulationView simulationData={simulationData} />
-                ) : (
-                    <TransactionVerificationView messageHash="0xEFD8DC......1CB8E" domainHash="0Xbad9......02412" />
-                )}
+                <TransactionVerificationsView messageHash="0x6131B5fae19EA4f9D964eAc0408E4408b66337b5" domainHash="0x6131B5fae19EA4f9D964eAc0408E4408b66337b5" simulationData={simulationData} currentStep={currentStep} />
             </ScrollView>
-
             <ConfirmVerification
                 onConfirm={handleConfirm}
                 onDecline={handleDecline}

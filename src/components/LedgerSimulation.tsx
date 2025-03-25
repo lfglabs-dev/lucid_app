@@ -1,22 +1,17 @@
 import React from 'react';
-import {
-    View,
-    Text,
-    StyleSheet,
-} from 'react-native';
-import { formatAddress } from '../services/utils';
+import { View, Text, StyleSheet } from 'react-native';
+import { ethers } from 'ethers';
 
-interface TransactionVerificationViewProps {
+interface LedgerSimulationProps {
     messageHash: string;
     domainHash: string;
 }
 
-export const TransactionVerificationView = ({ messageHash, domainHash }: TransactionVerificationViewProps) => {
-    const firstFour = messageHash.slice(0, 6); // Including '0x'
-    const lastFour = messageHash.slice(-4);
-    const firstFourDomain = domainHash.slice(0, 6); // Including '0x'
-    const lastFourDomain = domainHash.slice(-4);
+const formatAddress = (address: string): string => {
+    return `${address.slice(0, 4)}...${address.slice(-4)}`;
+};
 
+export const LedgerSimulation: React.FC<LedgerSimulationProps> = ({ messageHash, domainHash }) => {
     return (
         <>
             <View style={styles.header}>
@@ -27,11 +22,11 @@ export const TransactionVerificationView = ({ messageHash, domainHash }: Transac
             <View style={styles.section}>
                 <Text style={styles.sectionTitle}>Domain Hash</Text>
                 <View style={styles.hashContainer}>
-                    <Text style={styles.hashHighlightMessageHash}>{formatAddress(messageHash)}</Text>
+                    <Text style={styles.hashHighlightMessageHash}>{formatAddress(ethers.getAddress(messageHash))}</Text>
                 </View>
                 <Text style={styles.sectionTitle}>Message Hash</Text>
                 <View style={styles.hashContainer}>
-                    <Text style={styles.hashHighlightMessageHash}>{formatAddress(messageHash)}</Text>
+                    <Text style={styles.hashHighlightDomainHash}>{formatAddress(ethers.getAddress(domainHash))}</Text>
                 </View>
             </View>
         </>
@@ -39,6 +34,10 @@ export const TransactionVerificationView = ({ messageHash, domainHash }: Transac
 };
 
 const styles = StyleSheet.create({
+    container: {
+        flex: 1,
+        backgroundColor: '#fff',
+    },
     header: {
         padding: 20,
     },
