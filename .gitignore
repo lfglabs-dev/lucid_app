@@ -4,6 +4,7 @@
 node_modules/
 results/
 .env
+.prettierrc
 
 # Expo
 .expo/
