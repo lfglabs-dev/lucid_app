@@ -35,21 +35,24 @@ export const TransactionSimulation = () => {
   const [simulationData, setSimulationData] = useState<SimulationData | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<SimulationErrorState | null>(null)
-
-  console.log('TransactionSimulation mounted with transaction:', {
-    id: transaction.id,
-    from: transaction.from,
-    to: transaction.to,
-    chainId: transaction.chainId,
-    dataLength: transaction.data?.length,
-  })
-
-  const simulationParser = new SimulationParser()
+  const [domainHash, setDomainHash] = useState<string>('')
+  const [messageHash, setMessageHash] = useState<string>('')
 
   useEffect(() => {
+    const simulationParser = new SimulationParser({
+      from: transaction.from,
+      to: transaction.to,
+      data: transaction.data,
+      value: transaction.value,
+      gas: transaction.gas,
+      maxFeePerGas: transaction.maxFeePerGas,
+      maxPriorityFeePerGas: transaction.maxPriorityFeePerGas,
+      chainId: transaction.chainId,
+      nonce: transaction.nonce,
+    })
+
     const simulateTransaction = async () => {
       try {
-        console.log('Starting transaction simulation process...')
         setIsLoading(true)
         setError(null)
 
@@ -58,22 +61,18 @@ export const TransactionSimulation = () => {
           throw new SimulationError('Transaction data is missing')
         }
 
+        // Calculate domain hash
+        setDomainHash(simulationParser.calculateDomainHash())
+
+        // Calculate message hash
+        setMessageHash(simulationParser.calculateMessageHash())
+
         console.log('Calling simulation parser...')
-        const result = await simulationParser.simulateSafeTransaction({
-          from: transaction.from,
-          to: transaction.to,
-          data: transaction.data,
-          value: transaction.value,
-          gas: transaction.gas,
-          maxFeePerGas: transaction.maxFeePerGas,
-          maxPriorityFeePerGas: transaction.maxPriorityFeePerGas,
-          chainId: transaction.chainId,
-        })
+        const result = await simulationParser.simulateSafeTransaction()
 
         console.log('Simulation successful, setting data:', result)
         setSimulationData(result)
       } catch (err) {
-        console.error('Simulation error:', err)
         if (err instanceof SimulationError) {
           setError({
             message: err.message,
@@ -95,11 +94,9 @@ export const TransactionSimulation = () => {
   }, [transaction])
 
   const handleConfirm = () => {
-    console.log('Confirm button pressed, current step:', currentStep)
     if (currentStep === 'simulation') {
       setCurrentStep('verification')
     } else if (currentStep === 'verification') {
-      console.log('Updating transaction status to signed')
       updateTransactionStatus(transaction.id, 'signed')
       setCurrentStep('success')
     }
@@ -126,7 +123,7 @@ export const TransactionSimulation = () => {
     )
   }
 
-  if (isLoading || !simulationData) {
+  if ((isLoading || !simulationData) && !error) {
     return (
       <View style={styles.container}>
         <Text style={styles.loadingText}>Simulating transaction...</Text>
@@ -137,11 +134,20 @@ export const TransactionSimulation = () => {
   if (error) {
     return (
       <View style={styles.container}>
-        <Text style={styles.errorTitle}>Transaction Error</Text>
-        <Text style={styles.errorText}>
-          {error.code ? `Error ${error.code}: ` : ''}
-          {error.message}
-        </Text>
+        <ScrollView style={styles.scrollView}>
+          <Text style={styles.errorTitle}>Transaction Error</Text>
+          <Text style={styles.errorIcon}>⚠️</Text>
+          <Text style={styles.errorText}>
+            {error.code ? `Error ${error.code}: ` : ''}
+            {error.message}
+          </Text>
+        </ScrollView>
+        <ConfirmVerification
+          onConfirm={handleConfirm}
+          onDecline={handleDecline}
+          confirmText='Continue'
+          declineText='Close'
+        />
       </View>
     )
   }
@@ -150,9 +156,9 @@ export const TransactionSimulation = () => {
     <View style={styles.container}>
       <ScrollView style={styles.scrollView}>
         <TransactionVerificationsView
-          messageHash='0x6131B5fae19EA4f9D964eAc0408E4408b66337b5'
-          domainHash='0x6131B5fae19EA4f9D964eAc0408E4408b66337b5'
-          simulationData={simulationData}
+          messageHash={messageHash}
+          domainHash={domainHash}
+          simulationData={simulationData!}
           currentStep={currentStep}
         />
       </ScrollView>
@@ -182,15 +188,23 @@ const styles = StyleSheet.create({
   errorTitle: {
     textAlign: 'center',
     marginTop: 20,
-    fontSize: 18,
+    fontSize: 30,
     fontWeight: 'bold',
     color: '#FF4B4B',
   },
   errorText: {
     textAlign: 'center',
-    marginTop: 12,
-    fontSize: 16,
+    marginTop: 20,
+    fontSize: 20,
     color: '#FF4B4B',
     paddingHorizontal: 20,
   },
+  errorIcon: {
+    textAlign: 'center',
+    marginTop: 20,
+    fontSize: 120,
+    paddingHorizontal: 20,
+  },
 })
+
+

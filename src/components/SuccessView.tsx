@@ -16,7 +16,6 @@ interface SuccessViewProps {
   title: string
   description: string
   onComplete?: () => void
-  autoNavigate?: boolean
   navigateToTab?: keyof RootTabParamList
   delay?: number
 }
@@ -25,32 +24,25 @@ export const SuccessView = ({
   title,
   description,
   onComplete,
-  autoNavigate = true,
   navigateToTab = 'Transactions',
   delay = 2500,
 }: SuccessViewProps) => {
   const navigation = useNavigation<NavigationProp>()
   const hasNavigated = useRef(false)
 
-  useEffect(() => {
-    if (!autoNavigate) return
-
-    const timer = setTimeout(() => {
-      if (!hasNavigated.current) {
-        hasNavigated.current = true
-        if (onComplete) {
-          onComplete()
-        } else {
-          navigation.getParent()?.reset({
-            index: 1,
-            routes: [{ name: 'Link' }, { name: navigateToTab }, { name: 'Settings' }],
-          })
-        }
+  const handleAnimationFinish = () => {
+    if (!hasNavigated.current) {
+      hasNavigated.current = true
+      if (onComplete) {
+        onComplete()
+      } else {
+        navigation.getParent()?.reset({
+          index: 1,
+          routes: [{ name: 'Link' }, { name: navigateToTab }, { name: 'Settings' }],
+        })
       }
-    }, delay)
-
-    return () => clearTimeout(timer)
-  }, [navigation, autoNavigate, onComplete, navigateToTab, delay])
+    }
+  }
 
   return (
     <View style={styles.container}>
@@ -60,13 +52,15 @@ export const SuccessView = ({
           autoPlay
           loop={false}
           style={styles.animation}
+          duration={delay}
+          onAnimationFinish={handleAnimationFinish}
         />
         <Text style={styles.title}>{title}</Text>
         <Text style={styles.description}>{description}</Text>
       </View>
     </View>
   )
-}
+} 
 
 const styles = StyleSheet.create({
   container: {

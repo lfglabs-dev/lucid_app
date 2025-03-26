@@ -22,6 +22,7 @@ export interface Transaction {
   gas: string
   maxFeePerGas: string
   maxPriorityFeePerGas: string
+  nonce: string
   originalSafeTx?: EIP712SafeTx
 }
 
@@ -42,8 +43,8 @@ export interface EIP712SafeTx {
 }
 
 // Gas constants for transaction simulation
-const DEFAULT_GAS_LIMIT = '0x186A0' // 100,000 gas
-const DEFAULT_GAS_PRICE = '0x4A817C800' // 20 Gwei
+const DEFAULT_GAS_LIMIT = '0' // 100,000 gas
+const DEFAULT_GAS_PRICE = '0' // 20 Gwei
 
 // Helper function to ensure a value is in hex format
 const ensureHex = (value: string): string => {
@@ -72,6 +73,7 @@ export const createTransactionFromSafeTx = (
   gas: DEFAULT_GAS_LIMIT,
   maxFeePerGas: DEFAULT_GAS_PRICE,
   maxPriorityFeePerGas: DEFAULT_GAS_PRICE,
+  nonce: ensureHex(safeTx.nonce),
   originalSafeTx: {
     ...safeTx,
     nonce: ensureHex(safeTx.nonce),

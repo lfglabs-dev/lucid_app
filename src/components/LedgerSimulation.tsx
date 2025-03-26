@@ -1,14 +1,11 @@
 import React from 'react'
 import { View, Text, StyleSheet } from 'react-native'
 import { ethers } from 'ethers'
+import { formatAddress } from '../services/utils'
 
 interface LedgerSimulationProps {
   messageHash: string
   domainHash: string
-}
-
-const formatAddress = (address: string): string => {
-  return `${address.slice(0, 4)}...${address.slice(-4)}`
 }
 
 export const LedgerSimulation: React.FC<LedgerSimulationProps> = ({ messageHash, domainHash }) => {
@@ -25,13 +22,13 @@ export const LedgerSimulation: React.FC<LedgerSimulationProps> = ({ messageHash,
         <Text style={styles.sectionTitle}>Domain Hash</Text>
         <View style={styles.hashContainer}>
           <Text style={styles.hashHighlightMessageHash}>
-            {formatAddress(ethers.getAddress(messageHash))}
+            {formatAddress(domainHash)}
           </Text>
         </View>
         <Text style={styles.sectionTitle}>Message Hash</Text>
         <View style={styles.hashContainer}>
           <Text style={styles.hashHighlightDomainHash}>
-            {formatAddress(ethers.getAddress(domainHash))}
+            {formatAddress(messageHash)}
           </Text>
         </View>
       </View>

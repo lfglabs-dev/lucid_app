@@ -44,6 +44,7 @@ export interface SafeTxSimulationRequest {
   maxFeePerGas: string
   maxPriorityFeePerGas: string
   chainId: string
+  nonce: string
 }
 
 export interface SimulationData {
@@ -73,6 +74,7 @@ export class SimulationError extends Error {
   }
 
   static fromResponse(error: { message: string; code?: number; data?: string }): SimulationError {
+    console.error('SimulationError fromResponse:', error)
     return new SimulationError(error.message, error.code, error.data)
   }
 
@@ -92,20 +94,100 @@ export class SimulationParser {
     '0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef'
   private readonly APPROVAL_EVENT_SIGNATURE =
     '0x8c5be1e5ebec7d5bd14f71427d1e84f3dd0314c0f7b2291e5b200ac8c7c3b925'
+  private readonly DOMAIN_SEPARATOR_TYPEHASH = "0x47e79534a245952e8b16893a336b85a3d9ea9fa8c573f3d803afb92a79469218";
+  private readonly DOMAIN_SEPARATOR_TYPEHASH_OLD = "0x035aff83d86937d35b32e04f0ddc6ff469290eef2f1b692d8a815c89404d4749";
+  private readonly SAFE_TX_TYPEHASH = "0xbb8310d486368db6bd6f849402fdd73ad53d316b5a4b2644ad6efe0f941286d8";
 
-  constructor(private tokenInfoService: TokenInfoService = TokenInfoService.getInstance()) {
+  // Class properties for transaction data
+  private readonly from: string; // This is the Safe contract address
+  private readonly to: string;
+  private readonly data: string;
+  private readonly value: string;
+  private readonly gas: string;
+  private readonly maxFeePerGas: string;
+  private readonly maxPriorityFeePerGas: string;
+  private readonly chainId: string;
+  private readonly nonce: string;
+  
+  constructor(
+    transaction: SafeTxSimulationRequest,
+    private tokenInfoService: TokenInfoService = TokenInfoService.getInstance()
+  ) {
+    // Initialize properties from the transaction request
+    this.from = transaction.from; // This is the Safe contract address
+    this.to = transaction.to;
+    this.data = transaction.data;
+    this.value = transaction.value;
+    this.gas = transaction.gas;
+    this.maxFeePerGas = transaction.maxFeePerGas;
+    this.maxPriorityFeePerGas = transaction.maxPriorityFeePerGas;
+    this.chainId = transaction.chainId;
+    this.nonce = transaction.nonce;
     console.log('SimulationParser initialized')
   }
 
-  private async handleNativeTransfer(transaction: SafeTxSimulationRequest): Promise<SimulationData | null> {
-    try {
-      console.log('Handling native transfer:', {
-        from: transaction.from,
-        to: transaction.to,
-        value: transaction.value,
-      })
+  private getSafeVersion(): string {
+    // Mock: always return version 1.3.0 for now
+    return "1.3.0";
+  }
 
-      const chainInfo = await this.tokenInfoService.getChainMetadata(transaction.chainId)
+  private getDomainSeparatorTypeHash(): string {
+    const version = this.getSafeVersion();
+    const cleanVersion = version.split('+')[0];
+    
+    // For version 1.2.0 and below, use the old typehash
+    // For version 1.3.0 and above, use the new typehash
+    return this.compareVersions(cleanVersion, '1.3.0') < 0 
+      ? this.DOMAIN_SEPARATOR_TYPEHASH_OLD 
+      : this.DOMAIN_SEPARATOR_TYPEHASH;
+  }
+
+  private compareVersions(v1: string, v2: string): number {
+    const parts1 = v1.split('.').map(Number);
+    const parts2 = v2.split('.').map(Number);
+    
+    for (let i = 0; i < 3; i++) {
+      const diff = (parts1[i] || 0) - (parts2[i] || 0);
+      if (diff !== 0) return diff;
+    }
+    
+    return 0;
+  }
+
+  calculateDomainHash(): string {
+    try {
+      const domainSeparatorTypeHash = this.getDomainSeparatorTypeHash();
+      
+      // For legacy versions (<=1.2.0), we don't include chainId
+      const version = this.getSafeVersion();
+      const cleanVersion = version.split('+')[0];
+      const isLegacyVersion = this.compareVersions(cleanVersion, '1.2.0') <= 0;
+      
+      if (isLegacyVersion) {
+        const encodedData = ethers.AbiCoder.defaultAbiCoder().encode(
+          ['bytes32', 'address'],
+          [domainSeparatorTypeHash, this.from]
+        );
+        const hash = ethers.keccak256(encodedData);
+        return hash;
+      }
+
+      // Modern version (>=1.3.0) with chainId
+      const encodedData = ethers.AbiCoder.defaultAbiCoder().encode(
+        ['bytes32', 'uint256', 'address'],
+        [domainSeparatorTypeHash, BigInt(this.chainId), this.from]
+      );
+      const hash = ethers.keccak256(encodedData);
+      return hash;
+    } catch (error) {
+      console.error('Error calculating domain hash:', error);
+      throw new SimulationError('Failed to calculate domain hash');
+    }
+  }
+
+  private async handleNativeTransfer(): Promise<SimulationData | null> {
+    try {
+      const chainInfo = await this.tokenInfoService.getChainMetadata(this.chainId)
       if (!chainInfo) {
         throw new SimulationError('Chain metadata not found')
       }
@@ -113,18 +195,18 @@ export class SimulationParser {
       return {
         type: 'transfer',
         contractAddress: '0x0000000000000000000000000000000000000000',
-        amount: ethers.formatEther(transaction.value),
-        from: transaction.from,
-        to: transaction.to,
+        amount: ethers.formatEther(this.value),
+        from: this.from,
+        to: this.to,
         changes: [
           {
             type: 'decrease',
             assetIcon: chainInfo.icon,
             assetSymbol: chainInfo.symbol || 'ETH',
-            amount: ethers.formatEther(transaction.value),
+            amount: ethers.formatEther(this.value),
           },
         ],
-        chainId: transaction.chainId,
+        chainId: this.chainId,
       }
     } catch (error) {
       console.error('Error handling native transfer:', error)
@@ -132,23 +214,26 @@ export class SimulationParser {
     }
   }
 
-  async simulateSafeTransaction(transaction: SafeTxSimulationRequest): Promise<SimulationData> {
+  async simulateSafeTransaction(): Promise<SimulationData> {
     try {
       console.log('Starting transaction simulation:', {
-        from: transaction.from,
-        to: transaction.to,
-        chainId: transaction.chainId,
-        dataLength: transaction.data.length,
-        value: transaction.value,
+        from: this.from,
+        to: this.to,
+        data: this.data,
+        value: this.value,
+        gas: this.gas,
+        maxFeePerGas: this.maxFeePerGas,
+        maxPriorityFeePerGas: this.maxPriorityFeePerGas,
+        chainId: this.chainId
       })
 
       // Check for native transfer first
       if (
-        (!transaction.data || transaction.data === '0x') &&
-        transaction.value &&
-        BigInt(transaction.value) > 0
+        (!this.data || this.data === '0x') &&
+        this.value &&
+        BigInt(this.value) > 0
       ) {
-        const nativeTransfer = await this.handleNativeTransfer(transaction)
+        const nativeTransfer = await this.handleNativeTransfer()
         if (nativeTransfer) {
           return nativeTransfer
         }
@@ -163,17 +248,17 @@ export class SimulationParser {
             blockStateCalls: [
               {
                 blockOverrides: {
-                  baseFeePerGas: transaction.maxFeePerGas,
+                  baseFeePerGas: this.maxFeePerGas,
                 },
                 calls: [
                   {
-                    from: transaction.from,
-                    to: transaction.to,
-                    data: transaction.data,
-                    value: transaction.value,
-                    gas: transaction.gas,
-                    maxFeePerGas: transaction.maxFeePerGas,
-                    maxPriorityFeePerGas: transaction.maxPriorityFeePerGas,
+                    from: this.from,
+                    to: this.to,
+                    data: this.data,
+                    value: this.value,
+                    gas: this.gas,
+                    maxFeePerGas: this.maxFeePerGas,
+                    maxPriorityFeePerGas: this.maxPriorityFeePerGas,
                   },
                 ],
               },
@@ -186,7 +271,6 @@ export class SimulationParser {
         id: 1,
       }
 
-      console.log('Making RPC call to QuickNode...')
       const response = await fetch('https://docs-demo.quiknode.pro/', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -217,11 +301,10 @@ export class SimulationParser {
         throw SimulationError.fromResponse(call.error)
       }
 
-      const simulationData = await this.parseSimulationResult(result, transaction.chainId)
+      const simulationData = await this.parseSimulationResult(result, this.chainId)
       if (!simulationData) {
         throw new SimulationError('No valid transaction data found in simulation')
       }
-
       return simulationData
     } catch (error) {
       throw SimulationError.fromError(error)
@@ -233,7 +316,6 @@ export class SimulationParser {
     chainId: string
   ): Promise<SimulationData | null> {
     try {
-      console.log('Parsing simulation result...')
 
       if (!response.result?.[0]?.calls?.[0]) {
         console.error('Invalid simulation response structure:', response)
@@ -241,11 +323,7 @@ export class SimulationParser {
       }
 
       const call = response.result[0].calls[0]
-      console.log('Simulation call details:', {
-        status: call.status,
-        gasUsed: call.gasUsed,
-        logsCount: call.logs?.length || 0,
-      })
+
 
       if (call.error) {
         console.error('Call error:', call.error)
@@ -258,7 +336,7 @@ export class SimulationParser {
       const approvalEvent = call.logs?.find(log => log.topics[0] === this.APPROVAL_EVENT_SIGNATURE)
 
       if (!transferEvent && !approvalEvent) {
-        console.log('No transfer or approval events found in logs')
+        console.error('No transfer or approval events found in logs')
         return null
       }
 
@@ -269,19 +347,12 @@ export class SimulationParser {
         return null
       }
 
-      console.log('Fetching token metadata for:', tokenAddress)
       const token = await this.tokenInfoService.getTokenMetadata(chainId, tokenAddress)
 
       if (!token) {
         console.error('Token metadata not found for:', tokenAddress)
         return null
       }
-
-      console.log('Token metadata found:', {
-        symbol: token.symbol,
-        decimals: token.decimals,
-        icon: token.icon,
-      })
 
       if (transferEvent) {
         console.log('Found transfer event:', {
@@ -295,12 +366,6 @@ export class SimulationParser {
         const to = '0x' + transferEvent.topics[2].slice(26)
         const amount = BigInt(transferEvent.data)
         const formattedAmount = ethers.formatUnits(amount, token.decimals)
-
-        console.log('Parsed transfer data:', {
-          from,
-          to,
-          amount: amount.toString(),
-        })
 
         return {
           type: 'transfer',
@@ -334,11 +399,6 @@ export class SimulationParser {
         const amount = BigInt(approvalEvent.data)
         const formattedAmount = ethers.formatUnits(amount, token.decimals)
 
-        console.log('Parsed approval data:', {
-          owner,
-          spender,
-          amount: amount.toString(),
-        })
 
         return {
           type: 'approval',
@@ -362,6 +422,61 @@ export class SimulationParser {
     } catch (error) {
       console.error('Parse simulation error:', error)
       return null
+    }
+  }
+
+  calculateMessageHash(): string {
+    try {
+      console.log('calculateMessageHash:', {
+        to: this.to,
+        value: this.value,
+        data: this.data,
+        gas: this.gas,
+        maxFeePerGas: this.maxFeePerGas,
+        maxPriorityFeePerGas: this.maxPriorityFeePerGas,
+        chainId: this.chainId
+      });
+
+      // 1. Calculate data hash
+      const dataHash = ethers.keccak256(this.data);
+
+      // 2. Encode the SafeTx struct
+      const encodedData = ethers.AbiCoder.defaultAbiCoder().encode(
+        [
+          'bytes32', // typeHash
+          'address', // to
+          'uint256', // value
+          'bytes32', // dataHash
+          'uint8',   // operation
+          'uint256', // safeTxGas
+          'uint256', // baseGas
+          'uint256', // gasPrice
+          'address', // gasToken
+          'address', // refundReceiver
+          'uint256'  // nonce
+        ],
+        [
+          this.SAFE_TX_TYPEHASH,
+          this.to,
+          BigInt(this.value),
+          dataHash,
+          0, // operation (0 for CALL)
+          BigInt(this.gas),
+          0n, // baseGas
+          BigInt(this.maxFeePerGas),
+          '0x0000000000000000000000000000000000000000', // gasToken (ETH)
+          '0x0000000000000000000000000000000000000000', // refundReceiver
+          BigInt(this.nonce) // nonce (will be set by the Safe contract)
+        ]
+      );
+
+      // 3. Calculate final message hash
+      const messageHash = ethers.keccak256(encodedData);
+
+      return messageHash;
+    } catch (error) {
+      console.error('Error calculating message hash:', error);
+      throw new SimulationError('Failed to calculate message hash');
     }
   }
 }

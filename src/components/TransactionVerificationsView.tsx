@@ -29,9 +29,9 @@ export const TransactionVerificationsView = ({
         ) : simulationData.type === 'approval' ? (
           <ApprovalSimulationView simulationData={simulationData} />
         ) : null
-      ) : (
+      ) : currentStep === 'verification' ? (
         <LedgerSimulation messageHash={messageHash} domainHash={domainHash} />
-      )}
+      ) : null}
     </View>
   )
 }
