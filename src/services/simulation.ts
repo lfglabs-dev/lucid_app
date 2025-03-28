@@ -50,7 +50,6 @@ export interface SafeTxSimulationRequest {
 export interface SimulationData {
   type: 'transfer' | 'approval'
   contractAddress: string
-  amount: string
   from: string
   to: string
   changes: Array<{
@@ -61,6 +60,7 @@ export interface SimulationData {
     warning?: string
   }>
   chainId: string
+  operation: string
 }
 
 export class SimulationError extends Error {
@@ -97,6 +97,33 @@ export class SimulationParser {
   private readonly DOMAIN_SEPARATOR_TYPEHASH = "0x47e79534a245952e8b16893a336b85a3d9ea9fa8c573f3d803afb92a79469218";
   private readonly DOMAIN_SEPARATOR_TYPEHASH_OLD = "0x035aff83d86937d35b32e04f0ddc6ff469290eef2f1b692d8a815c89404d4749";
   private readonly SAFE_TX_TYPEHASH = "0xbb8310d486368db6bd6f849402fdd73ad53d316b5a4b2644ad6efe0f941286d8";
+
+  // TODO: In the future, we should decode method names from contract ABIs instead of hardcoding signatures
+  // This would allow us to handle any contract interaction, not just predefined ones
+  private readonly COMMON_METHOD_SIGNATURES: { [key: string]: string } = {
+    '0xa9059cbb': 'transfer',
+    '0x23b872dd': 'transferFrom',
+    '0x095ea7b3': 'approve',
+    '0x40c10f19': 'mint',
+    '0x42966c68': 'burn',
+    '0x79cc6790': 'burnFrom',
+    '0x2e1a7d4d': 'withdraw',
+    '0x3ccfd60b': 'withdrawAll',
+    '0xdb2e21bc': 'deposit',
+    '0xde0e9a3e': 'depositAll',
+    '0x853828b6': 'stake',
+    '0x9e1a00aa': 'unstake',
+    '0x1c69d141': 'claim',
+    '0x372500ab': 'claimAll',
+    '0x4e71d92d': 'compound',
+    '0x4e71e0c8': 'harvest',
+    '0x38ed1739': 'swapExactTokensForTokens',
+    '0x8803dbee': 'swapTokensForExactTokens',
+    '0x7ff36ab5': 'swapExactETHForTokens',
+    '0x4a25d94a': 'swapTokensForExactETH',
+    '0x4f2be91f': 'swapExactTokensForETH',
+    '0xfb3bdb41': 'swapETHForExactTokens'
+  }
 
   // Class properties for transaction data
   private readonly from: string; // This is the Safe contract address
@@ -185,33 +212,83 @@ export class SimulationParser {
     }
   }
 
-  private async handleNativeTransfer(): Promise<SimulationData | null> {
-    try {
-      const chainInfo = await this.tokenInfoService.getChainMetadata(this.chainId)
-      if (!chainInfo) {
-        throw new SimulationError('Chain metadata not found')
-      }
+  private async ethSimulateTxs(): Promise<SimulationResponse> {
+    console.log('ethSimulateTxs:', {
+      from: this.from,
+      to: this.to,
+      data: this.data,
+      value: this.value,
+      gas: this.gas,
+      maxFeePerGas: this.maxFeePerGas,
+      maxPriorityFeePerGas: this.maxPriorityFeePerGas,
+      chainId: this.chainId
+    })
 
-      return {
-        type: 'transfer',
-        contractAddress: '0x0000000000000000000000000000000000000000',
-        amount: ethers.formatEther(this.value),
-        from: this.from,
-        to: this.to,
-        changes: [
-          {
-            type: 'decrease',
-            assetIcon: chainInfo.icon,
-            assetSymbol: chainInfo.symbol || 'ETH',
-            amount: ethers.formatEther(this.value),
-          },
-        ],
-        chainId: this.chainId,
-      }
-    } catch (error) {
-      console.error('Error handling native transfer:', error)
-      return null
+    // Prepare simulation request
+    const simulationRequest = {
+      jsonrpc: '2.0',
+      method: 'eth_simulateV1',
+      params: [
+        {
+          blockStateCalls: [
+            {
+              blockOverrides: {
+                baseFeePerGas: this.maxFeePerGas.startsWith('0x') ? this.maxFeePerGas : `0x${this.maxFeePerGas}`,
+              },
+              calls: [
+                {
+                  from: this.from,
+                  to: this.to,
+                  data: this.data,
+                  value: this.value,
+                  gas: this.gas.startsWith('0x') ? this.gas : `0x${this.gas}`,
+                  maxFeePerGas: this.maxFeePerGas.startsWith('0x') ? this.maxFeePerGas : `0x${this.maxFeePerGas}`,
+                  maxPriorityFeePerGas: this.maxPriorityFeePerGas.startsWith('0x') ? this.maxPriorityFeePerGas : `0x${this.maxPriorityFeePerGas}`,
+                },
+              ],
+            },
+          ],
+          validation: true,
+          traceTransfers: true,
+        },
+        'latest',
+      ],
+      id: 1,
     }
+
+    const response = await fetch('https://docs-demo.quiknode.pro/', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(simulationRequest),
+    })
+
+    if (!response.ok) {
+      throw new SimulationError('Simulation request failed', response.status)
+    }
+
+    const result: SimulationResponse = await response.json()
+
+    console.log('Simulation response 0:', result.result?.[0]?.calls?.[0])
+    console.log('Simulation response logs:', result.result?.[0]?.calls?.[0].logs)
+
+    // Check for top-level RPC errors
+    if (result.error) {
+      throw SimulationError.fromResponse(result.error)
+    }
+
+    // Validate response structure
+    if (!result.result?.[0]?.calls?.[0]) {
+      throw new SimulationError('Invalid simulation response structure')
+    }
+
+    const call = result.result[0].calls[0]
+
+    // Check for execution errors
+    if (call.error) {
+      throw SimulationError.fromResponse(call.error)
+    }
+
+    return result
   }
 
   async simulateSafeTransaction(): Promise<SimulationData> {
@@ -227,96 +304,38 @@ export class SimulationParser {
         chainId: this.chainId
       })
 
-      // Check for native transfer first
-      if (
-        (!this.data || this.data === '0x') &&
-        this.value &&
-        BigInt(this.value) > 0
-      ) {
-        const nativeTransfer = await this.handleNativeTransfer()
-        if (nativeTransfer) {
-          return nativeTransfer
-        }
-      }
-
-      // Prepare simulation request
-      const simulationRequest = {
-        jsonrpc: '2.0',
-        method: 'eth_simulateV1',
-        params: [
-          {
-            blockStateCalls: [
-              {
-                blockOverrides: {
-                  baseFeePerGas: this.maxFeePerGas,
-                },
-                calls: [
-                  {
-                    from: this.from,
-                    to: this.to,
-                    data: this.data,
-                    value: this.value,
-                    gas: this.gas,
-                    maxFeePerGas: this.maxFeePerGas,
-                    maxPriorityFeePerGas: this.maxPriorityFeePerGas,
-                  },
-                ],
-              },
-            ],
-            validation: true,
-            traceTransfers: true,
-          },
-          'latest',
-        ],
-        id: 1,
-      }
-
-      const response = await fetch('https://docs-demo.quiknode.pro/', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(simulationRequest),
-      })
-
-      if (!response.ok) {
-        throw new SimulationError('Simulation request failed', response.status)
-      }
-
-      const result: SimulationResponse = await response.json()
-
-      console.log('Simulation response:', result)
-      // Check for top-level RPC errors
-      if (result.error) {
-        throw SimulationError.fromResponse(result.error)
-      }
-
-      // Validate response structure
-      if (!result.result?.[0]?.calls?.[0]) {
-        throw new SimulationError('Invalid simulation response structure')
-      }
-
-      const call = result.result[0].calls[0]
-
-      // Check for execution errors
-      if (call.error) {
-        throw SimulationError.fromResponse(call.error)
-      }
-
-      const simulationData = await this.parseSimulationResult(result, this.chainId)
-      if (!simulationData) {
+      const rawSimulationResponse = await this.ethSimulateTxs()
+      const parsedSimulationResponse = await this.parseSimulation(rawSimulationResponse, this.chainId)
+      if (!parsedSimulationResponse) {
         throw new SimulationError('No valid transaction data found in simulation')
       }
-      return simulationData
+      return parsedSimulationResponse
     } catch (error) {
       throw SimulationError.fromError(error)
     }
   }
 
-  private async parseSimulationResult(
+  private getOperationName(tokenAddress: string): string {
+    try {
+      // For ETH transfers, we know it's always a transfer operation if data is 0x
+      if (tokenAddress.toLowerCase() === '0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee' && this.data === '0x') {
+        return 'transfer'
+      }
+
+      // Get the method signature (first 4 bytes after 0x)
+      const methodSignature = this.data.slice(0, 10)
+      return this.COMMON_METHOD_SIGNATURES[methodSignature] || 'Unknown'
+    } catch (error) {
+      console.error('Error decoding operation name:', error)
+      return 'Unknown'
+    }
+  }
+
+  private async parseSimulation(
     response: SimulationResponse,
     chainId: string
   ): Promise<SimulationData | null> {
     try {
-
       if (!response.result?.[0]?.calls?.[0]) {
         console.error('Invalid simulation response structure:', response)
         return null
@@ -324,96 +343,87 @@ export class SimulationParser {
 
       const call = response.result[0].calls[0]
 
-
       if (call.error) {
         console.error('Call error:', call.error)
         return null
       }
 
       // Look for Transfer or Approval events in the logs
-      const transferEvent = call.logs?.find(log => log.topics[0] === this.TRANSFER_EVENT_SIGNATURE)
+      const transferEvents = call.logs?.filter(log => log.topics[0] === this.TRANSFER_EVENT_SIGNATURE) || []
+      const approvalEvents = call.logs?.filter(log => log.topics[0] === this.APPROVAL_EVENT_SIGNATURE) || []
 
-      const approvalEvent = call.logs?.find(log => log.topics[0] === this.APPROVAL_EVENT_SIGNATURE)
-
-      if (!transferEvent && !approvalEvent) {
+      if (transferEvents.length === 0 && approvalEvents.length === 0) {
         console.error('No transfer or approval events found in logs')
         return null
       }
 
-      // Get token information
-      const tokenAddress = transferEvent?.address || approvalEvent?.address
+      // Get token information from the first event (assuming all events are for the same token)
+      const tokenAddress = (transferEvents[0]?.address || approvalEvents[0]?.address)
       if (!tokenAddress) {
         console.error('No token address found in events')
         return null
       }
 
       const token = await this.tokenInfoService.getTokenMetadata(chainId, tokenAddress)
-
       if (!token) {
         console.error('Token metadata not found for:', tokenAddress)
         return null
       }
 
-      if (transferEvent) {
-        console.log('Found transfer event:', {
-          address: transferEvent.address,
-          topics: transferEvent.topics,
-          data: transferEvent.data,
-        })
+      const operation = this.getOperationName(tokenAddress)
 
-        // Parse transfer event data
-        const from = '0x' + transferEvent.topics[1].slice(26)
-        const to = '0x' + transferEvent.topics[2].slice(26)
-        const amount = BigInt(transferEvent.data)
-        const formattedAmount = ethers.formatUnits(amount, token.decimals)
+      // Handle multiple transfer events
+      if (transferEvents.length > 0) {
+        const changes = transferEvents.map(event => {
+          const from = '0x' + event.topics[1].slice(26)
+          const to = '0x' + event.topics[2].slice(26) === this.from ? 'yourself' : '0x' + event.topics[2].slice(26)
+          const amount = BigInt(event.data)
+          const formattedAmount = ethers.formatUnits(amount, token.decimals)
+          const isIncrease = to.toLowerCase() === this.from.toLowerCase()
+          
+          return {
+            type: (isIncrease ? 'increase' : 'decrease') as 'increase' | 'decrease',
+            assetIcon: token.icon,
+            assetSymbol: token.symbol,
+            amount: formattedAmount,
+            warning: token.warning,
+            from: from,
+            to: to,
+          }
+        })
 
         return {
           type: 'transfer',
           contractAddress: tokenAddress,
-          amount: formattedAmount,
-          from,
-          to,
-          changes: [
-            {
-              type: 'decrease' as const,
-              assetIcon: token.icon,
-              assetSymbol: token.symbol,
-              amount: formattedAmount,
-              warning: token.warning,
-            },
-          ],
+          from: this.from,
+          to: this.to,
+          operation,
+          changes,
           chainId,
         }
       }
 
-      if (approvalEvent) {
-        console.log('Found approval event:', {
-          address: approvalEvent.address,
-          topics: approvalEvent.topics,
-          data: approvalEvent.data,
+      // Handle multiple approval events
+      if (approvalEvents.length > 0) {
+        const changes = approvalEvents.map(event => {
+          const amount = BigInt(event.data)
+          const formattedAmount = ethers.formatUnits(amount, token.decimals)
+          
+          return {
+            type: 'increase' as const,
+            assetIcon: token.icon,
+            assetSymbol: token.symbol,
+            amount: formattedAmount,
+          }
         })
-
-        // Parse approval event data
-        const owner = '0x' + approvalEvent.topics[1].slice(26)
-        const spender = '0x' + approvalEvent.topics[2].slice(26)
-        const amount = BigInt(approvalEvent.data)
-        const formattedAmount = ethers.formatUnits(amount, token.decimals)
-
 
         return {
           type: 'approval',
           contractAddress: tokenAddress,
-          amount: formattedAmount,
-          from: owner,
-          to: spender,
-          changes: [
-            {
-              type: 'increase' as const,
-              assetIcon: token.icon,
-              assetSymbol: token.symbol,
-              amount: formattedAmount,
-            },
-          ],
+          from: approvalEvents[0].topics[1].slice(26),
+          to: approvalEvents[0].topics[2].slice(26),
+          operation,
+          changes,
           chainId,
         }
       }

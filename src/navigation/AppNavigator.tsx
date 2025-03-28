@@ -60,6 +60,7 @@ export const AppNavigator = () => {
   return (
     <NavigationContainer>
       <Tab.Navigator
+        initialRouteName="Transactions"
         screenOptions={({ route }) => ({
           tabBarIcon: ({ focused, color, size }) => {
             let iconName
@@ -83,6 +84,7 @@ export const AppNavigator = () => {
           headerTitleStyle: {
             fontWeight: 'bold',
           },
+          unmountOnBlur: true,
         })}
       >
         <Tab.Screen

@@ -64,6 +64,29 @@ export class TokenInfoService {
 
   public async getTokenMetadata(chainId: string, tokenAddress: string): Promise<TokenInfo | null> {
     try {
+      // Handle ETH token
+      if (tokenAddress.toLowerCase() === '0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee') {
+        const chainInfo = await this.getChainMetadata(chainId)
+        if (!chainInfo) {
+          throw new Error('Chain metadata not found')
+        }
+        return {
+          chainId,
+          address: tokenAddress,
+          name: chainInfo.name,
+          symbol: chainInfo.symbol || 'ETH',
+          decimals: 18,
+          icon: chainInfo.icon
+        }
+      }
+
+      // Check cache first
+      const cacheKey = `${chainId}-${tokenAddress}`
+      const cachedToken = this.tokenCache.get(cacheKey)
+      if (cachedToken) {
+        return cachedToken
+      }
+
       if (chainId !== '0x1') {
         console.error('Unsupported chain ID:', chainId)
         return null
@@ -72,12 +95,6 @@ export class TokenInfoService {
       if (!tokenAddress) {
         console.error('Token address is required')
         return null
-      }
-
-      const cacheKey = `${chainId}-${tokenAddress.toLowerCase()}`
-
-      if (this.tokenCache.has(cacheKey)) {
-        return this.tokenCache.get(cacheKey)!
       }
 
       const tokenInfo = await this.getTokenInfo(tokenAddress)

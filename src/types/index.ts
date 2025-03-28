@@ -1,4 +1,3 @@
-import { ImageSourcePropType } from 'react-native'
 
 export interface TokenInfo {
   chainId: string
@@ -43,8 +42,8 @@ export interface EIP712SafeTx {
 }
 
 // Gas constants for transaction simulation
-const DEFAULT_GAS_LIMIT = '0' // 100,000 gas
-const DEFAULT_GAS_PRICE = '0' // 20 Gwei
+const DEFAULT_GAS_LIMIT = '0x7A120' // 100,000 gas
+const DEFAULT_GAS_PRICE = '0x2E90EDD00' // 12 Gwei
 
 // Helper function to ensure a value is in hex format
 const ensureHex = (value: string): string => {

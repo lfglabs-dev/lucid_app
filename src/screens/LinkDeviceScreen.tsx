@@ -4,12 +4,14 @@ import { CameraView, useCameraPermissions } from 'expo-camera'
 import { getCurrentAuthToken } from '../services/auth'
 import { API_BASE_URL } from '../constants/api'
 import { SuccessView } from '../components/SuccessView'
+import { useIsFocused } from '@react-navigation/native'
 
 export const LinkDeviceScreen = () => {
   const [permission, requestPermission] = useCameraPermissions()
   const [isProcessing, setIsProcessing] = useState(false)
   const [showSuccess, setShowSuccess] = useState(false)
   const [deviceName, setDeviceName] = useState('')
+  const isFocused = useIsFocused()
   // Ref for immediate checks
   const processingRef = useRef(false)
 
@@ -147,7 +149,6 @@ export const LinkDeviceScreen = () => {
   return (
     <View style={styles.container}>
       <View style={styles.cameraContainer}>
-        {!isProcessing && (
           <CameraView
             style={styles.camera}
             facing='back'
@@ -155,13 +156,8 @@ export const LinkDeviceScreen = () => {
             barcodeScannerSettings={{
               barcodeTypes: ['qr'],
             }}
+            active={isFocused && !isProcessing}
           />
-        )}
-        {isProcessing && (
-          <View style={[styles.camera, styles.processingOverlay]}>
-            <Text style={styles.processingText}>Processing...</Text>
-          </View>
-        )}
         <View style={styles.scannerOverlay}>
           <Text style={styles.scannerText}>Scan QR Code</Text>
           <View style={styles.scannerFrame}>

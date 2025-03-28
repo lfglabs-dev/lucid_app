@@ -1,10 +1,10 @@
 import React, { useEffect, useState } from 'react'
 import { View, Text, StyleSheet, Image, ActivityIndicator } from 'react-native'
-import { TokenRow } from './TokenRow'
-import { ENSAddress } from './ENSAddress'
 import { TokenInfoService } from '../services/tokenInfo'
 import { TokenInfo } from '../types'
 import { SimulationData } from '../services/simulation'
+import { formatAmount } from '../services/utils'
+import { ContractInteractionSection } from './ContractInteractionSection'
 
 interface TransferSimulationViewProps {
   simulationData: SimulationData
@@ -15,8 +15,6 @@ export const TransferSimulationView = ({ simulationData }: TransferSimulationVie
   const [isLoading, setIsLoading] = useState(true)
   const tokenInfoService = TokenInfoService.getInstance()
   const tokenSummaries = tokenInfoService.getSimulationSummary(simulationData)
-
-  console.log('chainInfo:', chainInfo)
 
   useEffect(() => {
     const loadMetadata = async () => {
@@ -60,7 +58,7 @@ export const TransferSimulationView = ({ simulationData }: TransferSimulationVie
                 ]}
               >
                 {change.type === 'decrease' ? '-' : '+'}
-                {change.amount} {change.assetSymbol} {change?.warning ? '⚠️' : ''}
+                {formatAmount(change.amount)} {change.assetSymbol} {change?.warning ? '⚠️' : ''}
               </Text>
               {change?.warning ? (
                 <Text style={styles.warning}>{change.warning}</Text>
@@ -72,27 +70,10 @@ export const TransferSimulationView = ({ simulationData }: TransferSimulationVie
         ))}
       </View>
 
-      {/* Send Token Section */}
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Send Token</Text>
-        <View style={styles.tokenRows}>
-          <TokenRow label='Chain' value={chainInfo.name} icon={{ uri: chainInfo.icon }} />
-          {tokenSummaries.map((summary, index) => (
-            <TokenRow
-              key={index}
-              label='Send token'
-              value={`${summary.totalAmount} ${summary.assetSymbol}`}
-              icon={{ uri: summary.assetIcon }}
-              warning={Boolean(summary.warning)}
-            />
-          ))}
-          <TokenRow
-            label='Send to'
-            value={<ENSAddress address={simulationData.to} chainId={simulationData.chainId} />}
-            rightIcon
-          />
-        </View>
-      </View>
+      <ContractInteractionSection 
+        chainInfo={chainInfo}
+        simulationData={simulationData}
+      />
     </View>
   )
 }

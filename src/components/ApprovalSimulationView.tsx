@@ -1,10 +1,9 @@
 import React, { useEffect, useState } from 'react'
 import { View, Text, StyleSheet, Image, ActivityIndicator } from 'react-native'
-import { TokenRow } from './TokenRow'
-import { ENSAddress } from './ENSAddress'
 import { TokenInfoService } from '../services/tokenInfo'
 import { TokenInfo } from '../types'
 import { SimulationData } from '../services/simulation'
+import { ContractInteractionSection } from './ContractInteractionSection'
 
 interface ApprovalSimulationViewProps {
   simulationData: SimulationData
@@ -64,27 +63,10 @@ export const ApprovalSimulationView = ({ simulationData }: ApprovalSimulationVie
         ))}
       </View>
 
-      {/* Send Token Section */}
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Approve Token</Text>
-        <View style={styles.tokenRows}>
-          <TokenRow label='Chain' value={chainInfo.name} icon={{ uri: chainInfo.icon }} />
-          {tokenSummaries.map((summary, index) => (
-            <TokenRow
-              key={index}
-              label='Approve token'
-              value={`${summary.totalAmount} ${summary.assetSymbol}`}
-              icon={{ uri: summary.assetIcon }}
-              warning={Boolean(summary.warning)}
-            />
-          ))}
-          <TokenRow
-            label='Approve to'
-            value={<ENSAddress address={simulationData.to} chainId={simulationData.chainId} />}
-            rightIcon
-          />
-        </View>
-      </View>
+      <ContractInteractionSection 
+        chainInfo={chainInfo}
+        simulationData={simulationData}
+      />
     </View>
   )
 }
