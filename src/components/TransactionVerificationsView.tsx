@@ -19,8 +19,6 @@ export const TransactionVerificationsView = ({
   simulationData,
   currentStep,
 }: TransactionVerificationsViewProps) => {
-  console.log('simulationData:', simulationData)
-
   return (
     <View style={styles.container}>
       {simulationData && currentStep === 'simulation' ? (

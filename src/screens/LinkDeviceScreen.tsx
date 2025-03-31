@@ -22,7 +22,6 @@ export const LinkDeviceScreen = () => {
       if (!authToken) {
         throw new Error('No auth token available')
       }
-      console.log('[LinkDevice] Approving link with token:', linkToken)
 
       const response = await fetch(`${API_BASE_URL}/approve_link`, {
         method: 'POST',

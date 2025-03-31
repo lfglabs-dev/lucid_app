@@ -58,7 +58,7 @@ export const TransferSimulationView = ({ simulationData }: TransferSimulationVie
                 ]}
               >
                 {change.type === 'decrease' ? '-' : '+'}
-                {formatAmount(change.amount)} {change.assetSymbol} {change?.warning ? '⚠️' : ''}
+                {formatAmount(change.amount)}   {change.assetSymbol} {change?.warning ? '⚠️' : ''}
               </Text>
               {change?.warning ? (
                 <Text style={styles.warning}>{change.warning}</Text>

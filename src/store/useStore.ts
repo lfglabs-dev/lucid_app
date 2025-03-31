@@ -1,6 +1,7 @@
 import { create } from 'zustand'
 import { Transaction, Settings, createTransactionFromSafeTx } from '../types'
 import { fetchTransactions as fetchTransactionsFromApi } from '../services/api'
+import { QUICKNODE_RPC } from '../constants/api'
 
 interface AppState {
   transactions: Transaction[]
@@ -11,6 +12,8 @@ interface AppState {
   updateTransactionStatus: (id: string, status: Transaction['status']) => void
   fetchTransactions: (token: string) => Promise<void>
   getTransactionStatus: (id: string) => Transaction['status']
+  setCustomRpcUrl: (url: string | null) => void
+  getActiveRpcUrl: () => string
 }
 
 export const useStore = create<AppState>((set, get) => ({
@@ -20,6 +23,7 @@ export const useStore = create<AppState>((set, get) => ({
     ledgerHashCheckEnabled: false,
     safeHashCheckEnabled: false,
     pairedDevices: [],
+    customRpcUrl: null,
   },
 
   toggleLedgerHashCheck: () =>
@@ -63,7 +67,6 @@ export const useStore = create<AppState>((set, get) => ({
 
       // Then add new transactions, overwriting any duplicates
       requests.forEach(request => {
-        console.log('request', request)
         const tx = createTransactionFromSafeTx(
           request.content,
           request.request_id,
@@ -88,5 +91,18 @@ export const useStore = create<AppState>((set, get) => ({
     }
 
     return transaction.status
+  },
+
+  setCustomRpcUrl: (url: string | null) =>
+    set(state => ({
+      settings: {
+        ...state.settings,
+        customRpcUrl: url,
+      },
+    })),
+
+  getActiveRpcUrl: () => {
+    const { settings } = get()
+    return settings.customRpcUrl || QUICKNODE_RPC
   },
 }))

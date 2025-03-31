@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react'
 import { View, Text, StyleSheet, Image } from 'react-native'
 import { ethers } from 'ethers'
-import { QUICKNODE_RPC } from '../services/api'
+import { useStore } from '../store/useStore'
 import { formatAddress } from '../services/utils'
 import { Skeleton } from './ui/Skeleton'
 
@@ -26,7 +26,9 @@ export const ENSAddress = ({ address, chainId, style }: ENSAddressProps) => {
           return
         }
 
-        const provider = new ethers.JsonRpcProvider(QUICKNODE_RPC)
+        // Get the active RPC URL from the store
+        const rpcUrl = useStore.getState().getActiveRpcUrl()
+        const provider = new ethers.JsonRpcProvider(rpcUrl)
         const ensName = await provider.lookupAddress(address)
 
         if (ensName) {

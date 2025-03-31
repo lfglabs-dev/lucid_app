@@ -2,9 +2,6 @@ import { EIP712SafeTx } from '../types'
 import { getCurrentAuthToken } from './auth'
 import { API_BASE_URL } from '../constants/api'
 
-export const QUICKNODE_RPC =
-  'https://cold-divine-general.quiknode.pro/943dc7e0f44a7afc38afeea8439163761f42a321/'
-
 interface Request {
   request_id: string
   request_type: 'eoa_transaction' | 'eip712'

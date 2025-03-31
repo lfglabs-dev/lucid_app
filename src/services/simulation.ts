@@ -1,6 +1,6 @@
 import { ethers } from 'ethers'
 import { TokenInfoService } from './tokenInfo'
-
+import { useStore } from '../store/useStore'
 // Types
 interface EthereumLog {
   address: string
@@ -46,19 +46,24 @@ export interface SafeTxSimulationRequest {
   chainId: string
   nonce: string
 }
+type AssetChangeType = 'decrease' | 'increase'
+
+type AssetChanges = {
+  type: AssetChangeType
+  assetIcon: string
+  assetSymbol: string
+  amount: string
+  from?: string
+  to?: string
+  warning?: string
+} 
 
 export interface SimulationData {
   type: 'transfer' | 'approval'
   contractAddress: string
   from: string
   to: string
-  changes: Array<{
-    type: 'decrease' | 'increase'
-    assetIcon: string
-    assetSymbol: string
-    amount: string
-    warning?: string
-  }>
+  changes: AssetChanges[]
   chainId: string
   operation: string
 }
@@ -150,7 +155,6 @@ export class SimulationParser {
     this.maxPriorityFeePerGas = transaction.maxPriorityFeePerGas;
     this.chainId = transaction.chainId;
     this.nonce = transaction.nonce;
-    console.log('SimulationParser initialized')
   }
 
   private getSafeVersion(): string {
@@ -213,16 +217,8 @@ export class SimulationParser {
   }
 
   private async ethSimulateTxs(): Promise<SimulationResponse> {
-    console.log('ethSimulateTxs:', {
-      from: this.from,
-      to: this.to,
-      data: this.data,
-      value: this.value,
-      gas: this.gas,
-      maxFeePerGas: this.maxFeePerGas,
-      maxPriorityFeePerGas: this.maxPriorityFeePerGas,
-      chainId: this.chainId
-    })
+    // Get the active RPC URL from the store
+    const rpcUrl = useStore.getState().getActiveRpcUrl()
 
     // Prepare simulation request
     const simulationRequest = {
@@ -256,7 +252,7 @@ export class SimulationParser {
       id: 1,
     }
 
-    const response = await fetch('https://docs-demo.quiknode.pro/', {
+    const response = await fetch(rpcUrl, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(simulationRequest),
@@ -267,9 +263,6 @@ export class SimulationParser {
     }
 
     const result: SimulationResponse = await response.json()
-
-    console.log('Simulation response 0:', result.result?.[0]?.calls?.[0])
-    console.log('Simulation response logs:', result.result?.[0]?.calls?.[0].logs)
 
     // Check for top-level RPC errors
     if (result.error) {
@@ -340,7 +333,6 @@ export class SimulationParser {
         console.error('Invalid simulation response structure:', response)
         return null
       }
-
       const call = response.result[0].calls[0]
 
       if (call.error) {
@@ -348,104 +340,97 @@ export class SimulationParser {
         return null
       }
 
-      // Look for Transfer or Approval events in the logs
-      const transferEvents = call.logs?.filter(log => log.topics[0] === this.TRANSFER_EVENT_SIGNATURE) || []
-      const approvalEvents = call.logs?.filter(log => log.topics[0] === this.APPROVAL_EVENT_SIGNATURE) || []
+      // Group events by token address
+      const eventsByToken = this.groupEventsByToken(call.logs || [])
+      
+      // Process each token's events
+      const allChanges: AssetChanges[] = []
 
-      if (transferEvents.length === 0 && approvalEvents.length === 0) {
-        console.error('No transfer or approval events found in logs')
-        return null
-      }
+      // Process each token's events
+      for (const [tokenAddress, events] of Object.entries(eventsByToken)) {
+        const token = await this.tokenInfoService.getTokenMetadata(chainId, tokenAddress)
+        if (!token) {
+          console.error('Token metadata not found for:', tokenAddress)
+          continue
+        }
 
-      // Get token information from the first event (assuming all events are for the same token)
-      const tokenAddress = (transferEvents[0]?.address || approvalEvents[0]?.address)
-      if (!tokenAddress) {
-        console.error('No token address found in events')
-        return null
-      }
+        const transferEvents = events.filter(log => log.topics[0] === this.TRANSFER_EVENT_SIGNATURE)
+        const approvalEvents = events.filter(log => log.topics[0] === this.APPROVAL_EVENT_SIGNATURE)
 
-      const token = await this.tokenInfoService.getTokenMetadata(chainId, tokenAddress)
-      if (!token) {
-        console.error('Token metadata not found for:', tokenAddress)
-        return null
-      }
-
-      const operation = this.getOperationName(tokenAddress)
-
-      // Handle multiple transfer events
-      if (transferEvents.length > 0) {
-        const changes = transferEvents.map(event => {
+        // Process transfer events
+        for (const event of transferEvents) {
           const from = '0x' + event.topics[1].slice(26)
-          const to = '0x' + event.topics[2].slice(26) === this.from ? 'yourself' : '0x' + event.topics[2].slice(26)
-          const amount = BigInt(event.data)
-          const formattedAmount = ethers.formatUnits(amount, token.decimals)
-          const isIncrease = to.toLowerCase() === this.from.toLowerCase()
-          
-          return {
-            type: (isIncrease ? 'increase' : 'decrease') as 'increase' | 'decrease',
-            assetIcon: token.icon,
-            assetSymbol: token.symbol,
-            amount: formattedAmount,
-            warning: token.warning,
-            from: from,
-            to: to,
-          }
-        })
-
-        return {
-          type: 'transfer',
-          contractAddress: tokenAddress,
-          from: this.from,
-          to: this.to,
-          operation,
-          changes,
-          chainId,
-        }
-      }
-
-      // Handle multiple approval events
-      if (approvalEvents.length > 0) {
-        const changes = approvalEvents.map(event => {
+          const to = '0x' + event.topics[2].slice(26)
           const amount = BigInt(event.data)
           const formattedAmount = ethers.formatUnits(amount, token.decimals)
           
-          return {
-            type: 'increase' as const,
+          // Determine if this is an increase or decrease for our address
+          const isIncrease = to === this.from
+          const isDecrease = from === this.from
+
+          if (isIncrease || isDecrease) {
+            allChanges.push({
+              type: isIncrease ? 'increase' : 'decrease',
+              assetIcon: token.icon,
+              assetSymbol: token.symbol,
+              amount: formattedAmount,
+              warning: token.warning,
+              from: from,
+              to: to,
+            })
+          }
+        }
+
+        // Process approval events
+        for (const event of approvalEvents) {
+          const amount = BigInt(event.data)
+          const formattedAmount = ethers.formatUnits(amount, token.decimals)
+          
+          allChanges.push({
+            type: 'increase',
             assetIcon: token.icon,
             assetSymbol: token.symbol,
             amount: formattedAmount,
-          }
-        })
-
-        return {
-          type: 'approval',
-          contractAddress: tokenAddress,
-          from: approvalEvents[0].topics[1].slice(26),
-          to: approvalEvents[0].topics[2].slice(26),
-          operation,
-          changes,
-          chainId,
+          })
         }
       }
 
-      return null
+      if (allChanges.length === 0) {
+        console.error('No valid changes found in events')
+        return null
+      }
+
+      // Determine the operation type based on the changes
+      const operation = this.getOperationName(this.to)
+
+      return {
+        type: 'transfer',
+        contractAddress: this.to,
+        from: this.from,
+        to: this.to,
+        operation,
+        changes: allChanges,
+        chainId,
+      }
     } catch (error) {
       console.error('Parse simulation error:', error)
       return null
     }
   }
 
+  private groupEventsByToken(logs: EthereumLog[]): { [key: string]: EthereumLog[] } {
+    return logs.reduce((acc, log) => {
+      const tokenAddress = log.address.toLowerCase()
+      if (!acc[tokenAddress]) {
+        acc[tokenAddress] = []
+      }
+      acc[tokenAddress].push(log)
+      return acc
+    }, {} as { [key: string]: EthereumLog[] })
+  }
+
   calculateMessageHash(): string {
     try {
-      console.log('calculateMessageHash:', {
-        to: this.to,
-        value: this.value,
-        data: this.data,
-        gas: this.gas,
-        maxFeePerGas: this.maxFeePerGas,
-        maxPriorityFeePerGas: this.maxPriorityFeePerGas,
-        chainId: this.chainId
-      });
 
       // 1. Calculate data hash
       const dataHash = ethers.keccak256(this.data);

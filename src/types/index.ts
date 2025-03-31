@@ -1,4 +1,3 @@
-
 export interface TokenInfo {
   chainId: string
   address: string
@@ -97,4 +96,5 @@ export interface Settings {
   safeHashCheckEnabled: boolean
   clearSigningEnabled: boolean
   pairedDevices: PairedDevice[]
+  customRpcUrl: string | null
 }

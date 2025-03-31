@@ -67,11 +67,11 @@ export const TransactionSimulation = () => {
         // Calculate message hash
         setMessageHash(simulationParser.calculateMessageHash())
 
-        console.log('Calling simulation parser...')
         const result = await simulationParser.simulateSafeTransaction()
 
-        console.log('Simulation successful, setting data:', result)
         setSimulationData(result)
+
+        console.log('Simulation data:', result);
       } catch (err) {
         if (err instanceof SimulationError) {
           setError({
@@ -85,7 +85,6 @@ export const TransactionSimulation = () => {
           })
         }
       } finally {
-        console.log('Simulation process completed')
         setIsLoading(false)
       }
     }
@@ -103,13 +102,11 @@ export const TransactionSimulation = () => {
   }
 
   const handleDecline = () => {
-    console.log('Decline button pressed, updating status to rejected')
     updateTransactionStatus(transaction.id, 'rejected')
     navigation.goBack()
   }
 
   const handleSuccessComplete = () => {
-    console.log('Success view completed, navigating back')
     navigation.goBack()
   }
 

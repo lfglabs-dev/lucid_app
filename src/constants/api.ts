@@ -1,3 +1,5 @@
 // API configuration
-export const API_BASE_URL = process.env.API_BASE_URL || 'http://192.168.1.20:8080'
-export const COINMARKETCAP_API_KEY = process.env.COINMARKETCAP_API_KEY || ''
+export const API_BASE_URL = 'http://192.168.110.35:8080'
+// Default RPC URL
+export const QUICKNODE_RPC =
+  'https://cold-divine-general.quiknode.pro/943dc7e0f44a7afc38afeea8439163761f42a321/'

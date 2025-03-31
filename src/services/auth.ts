@@ -1,6 +1,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage'
 import { Platform } from 'react-native'
 import * as Device from 'expo-device'
+import { API_BASE_URL } from '../constants/api'
 const AUTH_STORAGE_KEY = '@lucid_auth'
 const ONE_DAY_MS = 24 * 60 * 60 * 1000
 
@@ -59,23 +60,14 @@ async function getDeviceName(): Promise<string> {
 
 async function registerDevice(): Promise<AuthResponse> {
   try {
-    console.log('[Auth] Starting device registration process...')
     const deviceName = await getDeviceName()
-    console.log('[Auth] Device details:', {
-      name: deviceName,
-      platform: Platform.OS,
-      model: Device.modelName,
-      osVersion: Device.osVersion,
-    })
 
-    const url = `${process.env.API_BASE_URL}/register_device`
-    console.log('[Auth] Making registration request to:', url)
+    const url = `${API_BASE_URL}/register_device`
 
     const requestBody = {
       device_name: deviceName,
       device_type: 'observer',
     }
-    console.log('[Auth] Request payload:', requestBody)
 
     const response = await fetch(url, {
       method: 'POST',
@@ -84,12 +76,6 @@ async function registerDevice(): Promise<AuthResponse> {
       },
       body: JSON.stringify(requestBody),
     })
-
-    console.log('[Auth] Registration response status:', response.status)
-    console.log(
-      '[Auth] Registration response headers:',
-      Object.fromEntries(response.headers.entries())
-    )
 
     if (!response.ok) {
       const errorText = await response.text()
@@ -102,11 +88,7 @@ async function registerDevice(): Promise<AuthResponse> {
     }
 
     const responseData = await response.json()
-    console.log('[Auth] Registration successful:', {
-      device_id: responseData.data.device_id,
-      device_type: responseData.data.device_type,
-      jwt_length: responseData.data.jwt.length,
-    })
+
     return responseData
   } catch (error) {
     console.error('[Auth] Registration error:', {
@@ -121,7 +103,7 @@ async function refreshSession(jwt: string): Promise<AuthResponse> {
   try {
     debugLog('Refresh', { token: jwt.substring(0, 10) + '...' })
 
-    const response = await fetch(`${process.env.API_BASE_URL}/refresh_session`, {
+    const response = await fetch(`${API_BASE_URL}/refresh_session`, {
       method: 'POST',
       headers: {
         Authorization: `Bearer ${jwt}`,
