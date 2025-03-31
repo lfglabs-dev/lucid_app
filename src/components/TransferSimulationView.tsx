@@ -125,8 +125,8 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
   },
   changeIcon: {
-    width: 30,
-    height: 30,
+    width: 28,
+    height: 28,
     borderRadius: 10,
   },
   warning: {

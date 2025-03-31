@@ -7,7 +7,7 @@ export class TokenInfoService {
   private static instance: TokenInfoService
   private tokenCache: Map<string, TokenInfo> = new Map()
   private chainCache: Map<string, TokenInfo> = new Map()
-  private readonly TRUST_WALLET_COMMIT = 'fa2403278ad8487d5be412381718194e810449cd'
+  private readonly TOKEN_REPO_COMMIT = 'c8287b6212fa26cfce025e7741998a3c70d84ec8'
 
   private constructor() {}
 
@@ -25,14 +25,11 @@ export class TokenInfoService {
 
   private async getTokenInfo(tokenAddress: string): Promise<TokenInfo | null> {
     try {
-      const baseUrl = `https://raw.githubusercontent.com/trustwallet/assets/${this.TRUST_WALLET_COMMIT}/blockchains/ethereum/assets/${ethers.getAddress(tokenAddress)}`
-      const infoUrl = `${baseUrl}/info.json`
-      const iconUrl = `${baseUrl}/logo.png`
-
-      const response = await fetch(infoUrl)
+      const url = `https://raw.githubusercontent.com/lfglabs-dev/lucid_tokens/${this.TOKEN_REPO_COMMIT}/tokens/ethereum/${ethers.getAddress(tokenAddress).toLowerCase()}.json`
+      const response = await fetch(url)
 
       if (!response.ok) {
-        console.log('Token metadata not found in Trust Wallet, using default values')
+        console.log('Token metadata not found in lucid_tokens, using default values')
         return {
           chainId: '0x1',
           address: tokenAddress,
@@ -50,9 +47,9 @@ export class TokenInfoService {
         chainId: '0x1',
         address: tokenAddress,
         name: data.name,
-        symbol: data.symbol,
+        symbol: data.symbol.toUpperCase(),
         decimals: data.decimals,
-        icon: iconUrl,
+        icon: data.logo.src || '﹖',
       }
 
       return tokenInfo
