@@ -6,22 +6,25 @@ import { SimulationData } from '../services/simulation'
 import { formatAmount } from '../services/utils'
 import { ContractInteractionSection } from './ContractInteractionSection'
 
-interface TransferSimulationViewProps {
+interface SimulationViewProps {
   simulationData: SimulationData
 }
 
-export const TransferSimulationView = ({ simulationData }: TransferSimulationViewProps) => {
+export const SimulationView = ({
+  simulationData,
+}: SimulationViewProps) => {
   const [chainInfo, setChainInfo] = useState<TokenInfo | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const tokenInfoService = TokenInfoService.getInstance()
-  const tokenSummaries = tokenInfoService.getSimulationSummary(simulationData)
 
   useEffect(() => {
     const loadMetadata = async () => {
       setIsLoading(true)
 
       try {
-        const chain = await tokenInfoService.getChainMetadata(simulationData.chainId)
+        const chain = await tokenInfoService.getChainMetadata(
+          simulationData.chainId
+        )
         setChainInfo(chain)
       } catch (error) {
         console.error('Error loading metadata:', error)
@@ -36,7 +39,7 @@ export const TransferSimulationView = ({ simulationData }: TransferSimulationVie
   if (isLoading || !chainInfo) {
     return (
       <View style={[styles.container, styles.loadingContainer]}>
-        <ActivityIndicator size='large' color='#0000ff' />
+        <ActivityIndicator size="large" color="#0000ff" />
       </View>
     )
   }
@@ -49,28 +52,47 @@ export const TransferSimulationView = ({ simulationData }: TransferSimulationVie
         {simulationData.changes.map((change, index) => (
           <View key={index} style={styles.changeItem}>
             <View
-              style={change?.warning ? styles.changeContentWithWarning : styles.changeContent}
+              style={
+                change?.warning
+                  ? styles.changeContentWithWarning
+                  : styles.changeContent
+              }
             >
               <Text
                 style={[
                   styles.changeAmount,
-                  { color: change.type === 'decrease' ? '#FF4B4B' : '#4CAF50' },
+                  {
+                    color:
+                      change.type === 'transfer'
+                        ? change.direction === 'decrease'
+                          ? '#FF4B4B'
+                          : '#4CAF50'
+                        : 'grey',
+                  },
                 ]}
               >
-                {change.type === 'decrease' ? '-' : '+'}
-                {formatAmount(change.amount)}   {change.assetSymbol} {change?.warning ? '⚠️' : ''}
+                {change.type === 'transfer'
+                  ? change.direction === 'decrease'
+                    ? '-'
+                    : '+'
+                  : 'Approve '}
+                {formatAmount(change.amount)} {change.assetSymbol}{' '}
+                {change?.warning ? '⚠️' : ''}
               </Text>
               {change?.warning ? (
                 <Text style={styles.warning}>{change.warning}</Text>
               ) : (
-                <Image source={{ uri: change.assetIcon }} style={styles.changeIcon} />
+                <Image
+                  source={{ uri: change.assetIcon }}
+                  style={styles.changeIcon}
+                />
               )}
             </View>
           </View>
         ))}
       </View>
 
-      <ContractInteractionSection 
+      <ContractInteractionSection
         chainInfo={chainInfo}
         simulationData={simulationData}
       />
@@ -121,7 +143,7 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   changeAmount: {
-    fontSize: 30,
+    fontSize: 25,
     fontWeight: 'bold',
   },
   changeIcon: {

@@ -23,7 +23,7 @@ export const EmptyState: React.FC<EmptyStateProps> = ({
           <CustomRefreshControl
             refreshing={refreshing || false}
             onRefresh={onRefresh}
-            tintColor='#0000ff'
+            tintColor="#0000ff"
             colors={['#0000ff']}
           />
         ) : undefined

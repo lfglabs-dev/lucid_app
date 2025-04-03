@@ -27,7 +27,7 @@ export const useStore = create<AppState>((set, get) => ({
   },
 
   toggleLedgerHashCheck: () =>
-    set(state => ({
+    set((state) => ({
       settings: {
         ...state.settings,
         ledgerHashCheckEnabled: !state.settings.ledgerHashCheckEnabled,
@@ -35,7 +35,7 @@ export const useStore = create<AppState>((set, get) => ({
     })),
 
   toggleSafeHashCheck: () =>
-    set(state => ({
+    set((state) => ({
       settings: {
         ...state.settings,
         safeHashCheckEnabled: !state.settings.safeHashCheckEnabled,
@@ -43,16 +43,18 @@ export const useStore = create<AppState>((set, get) => ({
     })),
 
   removePairedDevice: (id: string) =>
-    set(state => ({
+    set((state) => ({
       settings: {
         ...state.settings,
-        pairedDevices: state.settings.pairedDevices.filter(d => d.id !== id),
+        pairedDevices: state.settings.pairedDevices.filter((d) => d.id !== id),
       },
     })),
 
   updateTransactionStatus: (id: string, status: Transaction['status']) =>
-    set(state => ({
-      transactions: state.transactions.map(tx => (tx.id === id ? { ...tx, status } : tx)),
+    set((state) => ({
+      transactions: state.transactions.map((tx) =>
+        tx.id === id ? { ...tx, status } : tx
+      ),
     })),
 
   fetchTransactions: async (token: string) => {
@@ -61,12 +63,12 @@ export const useStore = create<AppState>((set, get) => ({
       const transactionMap = new Map<string, Transaction>()
 
       // First, add existing transactions to the map
-      get().transactions.forEach(tx => {
+      get().transactions.forEach((tx) => {
         transactionMap.set(tx.id, tx)
       })
 
       // Then add new transactions, overwriting any duplicates
-      requests.forEach(request => {
+      requests.forEach((request) => {
         const tx = createTransactionFromSafeTx(
           request.content,
           request.request_id,
@@ -84,7 +86,7 @@ export const useStore = create<AppState>((set, get) => ({
   },
 
   getTransactionStatus: (id: string): Transaction['status'] => {
-    const transaction = get().transactions.find(tx => tx.id === id)
+    const transaction = get().transactions.find((tx) => tx.id === id)
 
     if (!transaction) {
       throw new Error('Transaction not found')
@@ -94,7 +96,7 @@ export const useStore = create<AppState>((set, get) => ({
   },
 
   setCustomRpcUrl: (url: string | null) =>
-    set(state => ({
+    set((state) => ({
       settings: {
         ...state.settings,
         customRpcUrl: url,

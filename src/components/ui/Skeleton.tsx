@@ -8,7 +8,12 @@ interface SkeletonProps {
   style?: any
 }
 
-export const Skeleton = ({ width, height, borderRadius = 0, style }: SkeletonProps) => {
+export const Skeleton = ({
+  width,
+  height,
+  borderRadius = 0,
+  style,
+}: SkeletonProps) => {
   const animatedValue = new Animated.Value(0)
 
   React.useEffect(() => {

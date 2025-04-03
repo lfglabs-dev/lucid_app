@@ -46,7 +46,7 @@ export const CustomRefreshControl: React.FC<CustomRefreshControlProps> = ({
       style={{ backgroundColor: 'transparent' }}
     >
       <Animated.View style={{ transform: [{ rotate: spin }] }}>
-        <Ionicons name='refresh' size={24} color={tintColor} />
+        <Ionicons name="refresh" size={24} color={tintColor} />
       </Animated.View>
     </RefreshControl>
   )

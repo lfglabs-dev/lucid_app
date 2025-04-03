@@ -1,8 +1,7 @@
 import React from 'react'
-import { View, Text, StyleSheet } from 'react-native'
+import { View, StyleSheet } from 'react-native'
 import { SimulationData } from '../services/simulation'
-import { TransferSimulationView } from './TransferSimulationView'
-import { ApprovalSimulationView } from './ApprovalSimulationView'
+import { SimulationView } from './SimulationView'
 import { LedgerSimulation } from './LedgerSimulation'
 import { VerificationStep } from '../screens/TransactionSimulation'
 
@@ -22,11 +21,7 @@ export const TransactionVerificationsView = ({
   return (
     <View style={styles.container}>
       {simulationData && currentStep === 'simulation' ? (
-        simulationData.type === 'transfer' ? (
-          <TransferSimulationView simulationData={simulationData} />
-        ) : simulationData.type === 'approval' ? (
-          <ApprovalSimulationView simulationData={simulationData} />
-        ) : null
+        <SimulationView simulationData={simulationData} />
       ) : currentStep === 'verification' ? (
         <LedgerSimulation messageHash={messageHash} domainHash={domainHash} />
       ) : null}
@@ -39,7 +34,7 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#fff',
   },
-  header: {
+  header: { 
     padding: 20,
   },
   title: {

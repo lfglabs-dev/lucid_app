@@ -25,7 +25,7 @@ export const fetchTransactions = async (
   try {
     const queryParams = new URLSearchParams()
     if (minTimestamp) queryParams.append('min_timestamp', minTimestamp)
-    excludeIds.forEach(id => queryParams.append('exclude', id))
+    excludeIds.forEach((id) => queryParams.append('exclude', id))
 
     const url = `${API_BASE_URL}/requests?${queryParams.toString()}`
 
@@ -45,7 +45,9 @@ export const fetchTransactions = async (
         statusText: response.statusText,
         body: errorText,
       })
-      throw new Error(`Failed to fetch transactions: ${response.status} ${response.statusText}`)
+      throw new Error(
+        `Failed to fetch transactions: ${response.status} ${response.statusText}`
+      )
     }
 
     const data: ApiResponse = await response.json()

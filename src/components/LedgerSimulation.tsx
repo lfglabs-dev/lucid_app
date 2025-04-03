@@ -8,7 +8,10 @@ interface LedgerSimulationProps {
   domainHash: string
 }
 
-export const LedgerSimulation: React.FC<LedgerSimulationProps> = ({ messageHash, domainHash }) => {
+export const LedgerSimulation: React.FC<LedgerSimulationProps> = ({
+  messageHash,
+  domainHash,
+}) => {
   return (
     <>
       <View style={styles.header}>

@@ -84,7 +84,9 @@ async function registerDevice(): Promise<AuthResponse> {
         statusText: response.statusText,
         error: errorText,
       })
-      throw new Error(`Failed to register device: ${response.status} - ${errorText}`)
+      throw new Error(
+        `Failed to register device: ${response.status} - ${errorText}`
+      )
     }
 
     const responseData = await response.json()
@@ -114,14 +116,19 @@ async function refreshSession(jwt: string): Promise<AuthResponse> {
     if (!response.ok) {
       const errorText = await response.text()
       debugLog('Refresh failed', { status: response.status, error: errorText })
-      throw new Error(`Failed to refresh session: ${response.status} - ${errorText}`)
+      throw new Error(
+        `Failed to refresh session: ${response.status} - ${errorText}`
+      )
     }
 
     const data = await response.json()
     debugLog('Refresh success', { device_id: data.data?.device_id })
     return data
   } catch (error) {
-    debugLog('Refresh error', error instanceof Error ? error.message : 'Unknown error')
+    debugLog(
+      'Refresh error',
+      error instanceof Error ? error.message : 'Unknown error'
+    )
     throw error
   }
 }
@@ -151,7 +158,10 @@ export async function getOrRefreshAuth(): Promise<AuthResponse> {
     await AsyncStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(newAuth))
     return newAuth
   } catch (error) {
-    debugLog('Auth error', error instanceof Error ? error.message : 'Unknown error')
+    debugLog(
+      'Auth error',
+      error instanceof Error ? error.message : 'Unknown error'
+    )
     throw error
   }
 }

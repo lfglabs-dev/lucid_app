@@ -21,7 +21,8 @@ export const RpcSection = () => {
       <Text style={styles.sectionTitle}>RPC Configuration</Text>
       <View style={styles.warningContainer}>
         <Text style={styles.warningText}>
-          ⚠️ Warning: The RPC must support eth_simulatev1 method for transaction simulation to work
+          ⚠️ Warning: The RPC must support eth_simulatev1 method for transaction
+          simulation to work
         </Text>
       </View>
       <View style={styles.inputContainer}>
@@ -37,7 +38,9 @@ export const RpcSection = () => {
         </Text>
       </View>
       {settings.customRpcUrl && (
-        <Text style={styles.currentRpc}>Current RPC: {settings.customRpcUrl}</Text>
+        <Text style={styles.currentRpc}>
+          Current RPC: {settings.customRpcUrl}
+        </Text>
       )}
     </View>
   )
@@ -89,4 +92,4 @@ const styles = StyleSheet.create({
     color: '#666',
     marginTop: 8,
   },
-}) 
+})

@@ -16,10 +16,16 @@ export const ConfirmVerification = ({
 }: ConfirmVerificationProps) => {
   return (
     <View style={styles.buttonContainer}>
-      <TouchableOpacity style={[styles.button, styles.rejectButton]} onPress={onDecline}>
+      <TouchableOpacity
+        style={[styles.button, styles.rejectButton]}
+        onPress={onDecline}
+      >
         <Text style={styles.buttonText}>{declineText}</Text>
       </TouchableOpacity>
-      <TouchableOpacity style={[styles.button, styles.confirmButton]} onPress={onConfirm}>
+      <TouchableOpacity
+        style={[styles.button, styles.confirmButton]}
+        onPress={onConfirm}
+      >
         <Text style={styles.buttonText}>{confirmText}</Text>
       </TouchableOpacity>
     </View>

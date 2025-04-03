@@ -1,5 +1,12 @@
 import React from 'react'
-import { View, Text, TouchableOpacity, Alert, ActivityIndicator, StyleSheet } from 'react-native'
+import {
+  View,
+  Text,
+  TouchableOpacity,
+  Alert,
+  ActivityIndicator,
+  StyleSheet,
+} from 'react-native'
 import { useNavigation } from '@react-navigation/native'
 import { NativeStackNavigationProp } from '@react-navigation/native-stack'
 import { TransactionStackParamList } from '../navigation/AppNavigator'
@@ -26,7 +33,10 @@ interface TransactionItemProps {
   isRefreshing?: boolean
 }
 
-export const TransactionItem: React.FC<TransactionItemProps> = ({ item, isRefreshing }) => {
+export const TransactionItem: React.FC<TransactionItemProps> = ({
+  item,
+  isRefreshing,
+}) => {
   const navigation = useNavigation<NavigationProp>()
   const { updateTransactionStatus, getTransactionStatus } = useStore()
   const isPending = item.status === 'pending'
@@ -86,9 +96,11 @@ export const TransactionItem: React.FC<TransactionItemProps> = ({ item, isRefres
       </View>
       <View style={styles.statusContainer}>
         {isRefreshing ? (
-          <ActivityIndicator size='small' color='#0000ff' />
+          <ActivityIndicator size="small" color="#0000ff" />
         ) : (
-          <Text style={styles.icon}>{getStatusEmoji(getTransactionStatus(item.id))}</Text>
+          <Text style={styles.icon}>
+            {getStatusEmoji(getTransactionStatus(item.id))}
+          </Text>
         )}
       </View>
     </TouchableOpacity>

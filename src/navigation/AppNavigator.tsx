@@ -31,7 +31,7 @@ const TransactionStack = createNativeStackNavigator<TransactionStackParamList>()
 const LinkNavigator = () => {
   return (
     <LinkStack.Navigator screenOptions={{ headerShown: false }}>
-      <LinkStack.Screen name='ScanQR' component={LinkDeviceScreen} />
+      <LinkStack.Screen name="ScanQR" component={LinkDeviceScreen} />
     </LinkStack.Navigator>
   )
 }
@@ -40,12 +40,12 @@ const TransactionNavigator = () => {
   return (
     <TransactionStack.Navigator>
       <TransactionStack.Screen
-        name='TransactionsList'
+        name="TransactionsList"
         component={TransactionsScreen}
         options={{ title: 'Transactions' }}
       />
       <TransactionStack.Screen
-        name='TransactionSimulation'
+        name="TransactionSimulation"
         component={TransactionSimulation}
         options={{
           title: 'Transaction Simulation',
@@ -88,20 +88,20 @@ export const AppNavigator = () => {
         })}
       >
         <Tab.Screen
-          name='Link'
+          name="Link"
           component={LinkNavigator}
           options={{
             headerShown: false,
           }}
         />
         <Tab.Screen
-          name='Transactions'
+          name="Transactions"
           component={TransactionNavigator}
           options={{
             headerShown: false,
           }}
         />
-        <Tab.Screen name='Settings' component={SettingsScreen} />
+        <Tab.Screen name="Settings" component={SettingsScreen} />
       </Tab.Navigator>
     </NavigationContainer>
   )

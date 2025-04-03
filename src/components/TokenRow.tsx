@@ -1,5 +1,12 @@
 import React, { ReactNode } from 'react'
-import { View, Text, Image, StyleSheet, ImageSourcePropType, TouchableOpacity } from 'react-native'
+import {
+  View,
+  Text,
+  Image,
+  StyleSheet,
+  ImageSourcePropType,
+  TouchableOpacity,
+} from 'react-native'
 
 interface TokenRowProps {
   label: string
@@ -10,7 +17,14 @@ interface TokenRowProps {
   warning?: boolean
 }
 
-export const TokenRow = ({ label, value, icon, onPress, rightIcon, warning }: TokenRowProps) => {
+export const TokenRow = ({
+  label,
+  value,
+  icon,
+  onPress,
+  rightIcon,
+  warning,
+}: TokenRowProps) => {
   const content = (
     <View style={styles.container}>
       <View style={styles.leftContent}>
@@ -19,7 +33,11 @@ export const TokenRow = ({ label, value, icon, onPress, rightIcon, warning }: To
         <Text style={styles.label}>{label}</Text>
       </View>
       <View style={styles.rightContent}>
-        {typeof value === 'string' ? <Text style={styles.value}>{value}</Text> : value}
+        {typeof value === 'string' ? (
+          <Text style={styles.value}>{value}</Text>
+        ) : (
+          value
+        )}
         {rightIcon && <Text style={styles.chevron}>›</Text>}
       </View>
     </View>

@@ -6,8 +6,8 @@ export const AboutSection = () => {
     <View style={styles.section}>
       <Text style={styles.sectionTitle}>About Lucid</Text>
       <Text style={styles.aboutText}>
-        Lucid is a transaction verification mobile app that helps you simulate and verify your
-        blockchain transactions before signing them.
+        Lucid is a transaction verification mobile app that helps you simulate
+        and verify your blockchain transactions before signing them.
       </Text>
     </View>
   )

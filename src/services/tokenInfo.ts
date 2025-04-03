@@ -7,7 +7,8 @@ export class TokenInfoService {
   private static instance: TokenInfoService
   private tokenCache: Map<string, TokenInfo> = new Map()
   private chainCache: Map<string, TokenInfo> = new Map()
-  private readonly TOKEN_REPO_COMMIT = 'c8287b6212fa26cfce025e7741998a3c70d84ec8'
+  private readonly TOKEN_REPO_COMMIT =
+    'c8287b6212fa26cfce025e7741998a3c70d84ec8'
 
   private constructor() {}
 
@@ -29,7 +30,9 @@ export class TokenInfoService {
       const response = await fetch(url)
 
       if (!response.ok) {
-        console.log('Token metadata not found in lucid_tokens, using default values')
+        console.log(
+          'Token metadata not found in lucid_tokens, using default values'
+        )
         return {
           chainId: '0x1',
           address: tokenAddress,
@@ -59,10 +62,16 @@ export class TokenInfoService {
     }
   }
 
-  public async getTokenMetadata(chainId: string, tokenAddress: string): Promise<TokenInfo | null> {
+  public async getTokenMetadata(
+    chainId: string,
+    tokenAddress: string
+  ): Promise<TokenInfo | null> {
     try {
       // Handle ETH token
-      if (tokenAddress.toLowerCase() === '0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee') {
+      if (
+        tokenAddress.toLowerCase() ===
+        '0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee'
+      ) {
         const chainInfo = await this.getChainMetadata(chainId)
         if (!chainInfo) {
           throw new Error('Chain metadata not found')
@@ -73,7 +82,7 @@ export class TokenInfoService {
           name: chainInfo.name,
           symbol: chainInfo.symbol || 'ETH',
           decimals: 18,
-          icon: chainInfo.icon
+          icon: chainInfo.icon,
         }
       }
 
@@ -142,33 +151,37 @@ export class TokenInfoService {
     warning?: string
   }> {
     // Group changes by asset symbol to sum amounts
-    const tokenSummaries = new Map<string, {
-      totalAmount: string
-      assetSymbol: string
-      assetIcon: string
-      warning?: string
-    }>()
+    const tokenSummaries = new Map<
+      string,
+      {
+        totalAmount: string
+        assetSymbol: string
+        assetIcon: string
+        warning?: string
+      }
+    >()
 
-    simulationData.changes.forEach(change => {
+    simulationData.changes.forEach((change) => {
       const currentSummary = tokenSummaries.get(change.assetSymbol) || {
         totalAmount: '0',
         assetSymbol: change.assetSymbol,
         assetIcon: change.assetIcon,
-        warning: change.warning
+        warning: change.warning,
       }
 
       // Convert amounts to numbers for addition
       const currentAmount = parseFloat(currentSummary.totalAmount)
       const changeAmount = parseFloat(change.amount)
-      
+
       // Add or subtract based on change type
-      const newAmount = change.type === 'increase' 
-        ? currentAmount + changeAmount 
-        : currentAmount - changeAmount
+      const newAmount =
+        change.type === 'increase'
+          ? currentAmount + changeAmount
+          : currentAmount - changeAmount
 
       tokenSummaries.set(change.assetSymbol, {
         ...currentSummary,
-        totalAmount: newAmount.toString()
+        totalAmount: newAmount.toString(),
       })
     })
 

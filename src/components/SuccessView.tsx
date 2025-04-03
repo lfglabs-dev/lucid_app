@@ -38,7 +38,11 @@ export const SuccessView = ({
       } else {
         navigation.getParent()?.reset({
           index: 1,
-          routes: [{ name: 'Link' }, { name: navigateToTab }, { name: 'Settings' }],
+          routes: [
+            { name: 'Link' },
+            { name: navigateToTab },
+            { name: 'Settings' },
+          ],
         })
       }
     }
@@ -60,7 +64,7 @@ export const SuccessView = ({
       </View>
     </View>
   )
-} 
+}
 
 const styles = StyleSheet.create({
   container: {

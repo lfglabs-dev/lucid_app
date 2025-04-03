@@ -1,5 +1,12 @@
 import React, { useState, useRef } from 'react'
-import { View, Text, StyleSheet, TouchableOpacity, Alert, Dimensions } from 'react-native'
+import {
+  View,
+  Text,
+  StyleSheet,
+  TouchableOpacity,
+  Alert,
+  Dimensions,
+} from 'react-native'
 import { CameraView, useCameraPermissions } from 'expo-camera'
 import { getCurrentAuthToken } from '../services/auth'
 import { API_BASE_URL } from '../constants/api'
@@ -39,15 +46,24 @@ export const LinkDeviceScreen = () => {
           statusText: response.statusText,
           body: errorData,
         })
-        throw new Error(`Failed to link token: ${response.status} ${response.statusText}`)
+        throw new Error(
+          `Failed to link token: ${response.status} ${response.statusText}`
+        )
       }
 
       const responseData = await response.json()
       console.log('[LinkDevice] Link approved successfully:', responseData)
       return true
     } catch (error) {
-      if (error instanceof TypeError && error.message === 'Network request failed') {
-        console.error('[LinkDevice] Network error - Is the server running at', API_BASE_URL, '?')
+      if (
+        error instanceof TypeError &&
+        error.message === 'Network request failed'
+      ) {
+        console.error(
+          '[LinkDevice] Network error - Is the server running at',
+          API_BASE_URL,
+          '?'
+        )
       }
       console.error('[LinkDevice] Error linking token:', {
         error,
@@ -119,9 +135,9 @@ export const LinkDeviceScreen = () => {
   if (showSuccess) {
     return (
       <SuccessView
-        title='Device Connected!'
+        title="Device Connected!"
         description={deviceName}
-        navigateToTab='Transactions'
+        navigateToTab="Transactions"
       />
     )
   }
@@ -129,7 +145,9 @@ export const LinkDeviceScreen = () => {
   if (!permission) {
     return (
       <View style={styles.container}>
-        <Text style={styles.permissionText}>Requesting camera permission...</Text>
+        <Text style={styles.permissionText}>
+          Requesting camera permission...
+        </Text>
       </View>
     )
   }
@@ -137,9 +155,16 @@ export const LinkDeviceScreen = () => {
   if (!permission.granted) {
     return (
       <View style={styles.container}>
-        <Text style={styles.permissionText}>Camera permission is required to scan QR codes</Text>
-        <TouchableOpacity style={styles.permissionButton} onPress={requestPermission}>
-          <Text style={styles.permissionButtonText}>Grant Camera Permission</Text>
+        <Text style={styles.permissionText}>
+          Camera permission is required to scan QR codes
+        </Text>
+        <TouchableOpacity
+          style={styles.permissionButton}
+          onPress={requestPermission}
+        >
+          <Text style={styles.permissionButtonText}>
+            Grant Camera Permission
+          </Text>
         </TouchableOpacity>
       </View>
     )
@@ -148,15 +173,15 @@ export const LinkDeviceScreen = () => {
   return (
     <View style={styles.container}>
       <View style={styles.cameraContainer}>
-          <CameraView
-            style={styles.camera}
-            facing='back'
-            onBarcodeScanned={handleBarCodeScanned}
-            barcodeScannerSettings={{
-              barcodeTypes: ['qr'],
-            }}
-            active={isFocused && !isProcessing}
-          />
+        <CameraView
+          style={styles.camera}
+          facing="back"
+          onBarcodeScanned={handleBarCodeScanned}
+          barcodeScannerSettings={{
+            barcodeTypes: ['qr'],
+          }}
+          active={isFocused && !isProcessing}
+        />
         <View style={styles.scannerOverlay}>
           <Text style={styles.scannerText}>Scan QR Code</Text>
           <View style={styles.scannerFrame}>

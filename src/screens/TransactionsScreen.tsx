@@ -30,7 +30,9 @@ export const TransactionsScreen = () => {
       await fetchTransactions(token.data.jwt)
     } catch (error) {
       console.error('[Transactions] Error loading transactions:', error)
-      setError(error instanceof Error ? error.message : 'Failed to load transactions')
+      setError(
+        error instanceof Error ? error.message : 'Failed to load transactions'
+      )
     } finally {
       setIsLoading(false)
       setRefreshing(false)
@@ -62,14 +64,16 @@ export const TransactionsScreen = () => {
     <View style={styles.container}>
       <FlatList
         data={transactions}
-        keyExtractor={item => item.id.toString()}
-        renderItem={({ item }) => <TransactionItem item={item} isRefreshing={refreshing} />}
+        keyExtractor={(item) => item.id.toString()}
+        renderItem={({ item }) => (
+          <TransactionItem item={item} isRefreshing={refreshing} />
+        )}
         contentContainerStyle={styles.listContent}
         refreshControl={
           <CustomRefreshControl
             refreshing={refreshing}
             onRefresh={onRefresh}
-            tintColor='#0000ff'
+            tintColor="#0000ff"
             colors={['#0000ff']}
           />
         }

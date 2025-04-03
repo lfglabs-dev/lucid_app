@@ -9,7 +9,7 @@ const DeviceList = ({ devices }: { devices: LinkedDevice[] }) => {
 
   return (
     <View style={styles.deviceSection}>
-      {devices.map(device => (
+      {devices.map((device) => (
         <View key={device.device_id} style={styles.deviceRow}>
           <View style={styles.deviceInfo}>
             <Text style={styles.deviceName}>{device.device_name}</Text>
@@ -39,7 +39,8 @@ export const LinkedDevicesSection = () => {
 
         // Deduplicate devices based on device_id
         const uniquePeers = response.data.peers.filter(
-          (device, index, self) => index === self.findIndex(d => d.device_id === device.device_id)
+          (device, index, self) =>
+            index === self.findIndex((d) => d.device_id === device.device_id)
         )
 
         setLinkedDevices({
@@ -47,7 +48,9 @@ export const LinkedDevicesSection = () => {
           peers: uniquePeers,
         })
       } catch (err) {
-        setError(err instanceof Error ? err.message : 'Failed to load linked devices')
+        setError(
+          err instanceof Error ? err.message : 'Failed to load linked devices'
+        )
       } finally {
         setIsLoading(false)
       }
@@ -60,7 +63,7 @@ export const LinkedDevicesSection = () => {
     <View style={styles.section}>
       <Text style={styles.sectionTitle}>Linked Devices</Text>
       {isLoading ? (
-        <ActivityIndicator size='large' color='#0000ff' />
+        <ActivityIndicator size="large" color="#0000ff" />
       ) : error ? (
         <Text style={styles.errorText}>{error}</Text>
       ) : linkedDevices ? (

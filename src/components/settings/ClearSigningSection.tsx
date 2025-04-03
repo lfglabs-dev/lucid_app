@@ -10,11 +10,17 @@ export const ClearSigningSection = () => {
       <Text style={styles.sectionTitle}>Clear Signing</Text>
       <View style={styles.settingRow}>
         <Text style={styles.settingLabel}>Enable Safe hash Check</Text>
-        <Switch value={settings.safeHashCheckEnabled} onValueChange={toggleSafeHashCheck} />
+        <Switch
+          value={settings.safeHashCheckEnabled}
+          onValueChange={toggleSafeHashCheck}
+        />
       </View>
       <View style={styles.settingRow}>
         <Text style={styles.settingLabel}>Enable Ledger hash Check</Text>
-        <Switch value={settings.ledgerHashCheckEnabled} onValueChange={toggleLedgerHashCheck} />
+        <Switch
+          value={settings.ledgerHashCheckEnabled}
+          onValueChange={toggleLedgerHashCheck}
+        />
       </View>
     </View>
   )

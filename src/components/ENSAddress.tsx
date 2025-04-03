@@ -55,12 +55,19 @@ export const ENSAddress = ({ address, chainId, style }: ENSAddressProps) => {
     <View style={[styles.container, style]}>
       {isLoading ? (
         <>
-          <Skeleton width={24} height={24} borderRadius={12} style={styles.ensAvatar} />
+          <Skeleton
+            width={24}
+            height={24}
+            borderRadius={12}
+            style={styles.ensAvatar}
+          />
           <Skeleton width={120} height={20} style={styles.addressSkeleton} />
         </>
       ) : (
         <>
-          {ensAvatar && <Image source={{ uri: ensAvatar }} style={styles.ensAvatar} />}
+          {ensAvatar && (
+            <Image source={{ uri: ensAvatar }} style={styles.ensAvatar} />
+          )}
           <Text style={styles.address}>{displayAddress}</Text>
         </>
       )}

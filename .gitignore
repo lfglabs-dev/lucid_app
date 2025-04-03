@@ -5,7 +5,8 @@ node_modules/
 results/
 .env
 .prettierrc
-
+ios/
+android/
 # Expo
 .expo/
 dist/

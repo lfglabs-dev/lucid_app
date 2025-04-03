@@ -8,7 +8,11 @@ import { useStore } from '../store/useStore'
 import { ConfirmVerification } from '../components/ConfirmVerification'
 import { TransactionVerificationsView } from '../components/TransactionVerificationsView'
 import { SuccessView } from '../components/SuccessView'
-import { SimulationData, SimulationParser, SimulationError } from '../services/simulation'
+import {
+  SimulationData,
+  SimulationParser,
+  SimulationError,
+} from '../services/simulation'
 
 type NavigationProp = NativeStackNavigationProp<TransactionStackParamList>
 
@@ -32,7 +36,9 @@ export const TransactionSimulation = () => {
   const { transaction } = route.params
   const { updateTransactionStatus } = useStore()
   const [currentStep, setCurrentStep] = useState<VerificationStep>('simulation')
-  const [simulationData, setSimulationData] = useState<SimulationData | null>(null)
+  const [simulationData, setSimulationData] = useState<SimulationData | null>(
+    null
+  )
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<SimulationErrorState | null>(null)
   const [domainHash, setDomainHash] = useState<string>('')
@@ -71,7 +77,7 @@ export const TransactionSimulation = () => {
 
         setSimulationData(result)
 
-        console.log('Simulation data:', result);
+        console.log('Simulation data:', result)
       } catch (err) {
         if (err instanceof SimulationError) {
           setError({
@@ -113,8 +119,8 @@ export const TransactionSimulation = () => {
   if (currentStep === 'success') {
     return (
       <SuccessView
-        title='Transaction Verified'
-        description='Congrats! You verified what you were signing...'
+        title="Transaction Verified"
+        description="Congrats! You verified what you were signing..."
         onComplete={handleSuccessComplete}
       />
     )
@@ -142,8 +148,8 @@ export const TransactionSimulation = () => {
         <ConfirmVerification
           onConfirm={handleConfirm}
           onDecline={handleDecline}
-          confirmText='Continue'
-          declineText='Close'
+          confirmText="Continue"
+          declineText="Close"
         />
       </View>
     )
@@ -163,7 +169,7 @@ export const TransactionSimulation = () => {
         onConfirm={handleConfirm}
         onDecline={handleDecline}
         confirmText={currentStep === 'simulation' ? 'Continue' : 'Sign'}
-        declineText='Decline'
+        declineText="Decline"
       />
     </View>
   )
@@ -203,5 +209,3 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
   },
 })
-
-
