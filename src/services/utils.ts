@@ -1,3 +1,5 @@
+import { WordArray } from "crypto-es/lib/core"
+
 export const formatAddress = (address: string) => {
   if (address === 'yourself') {
     return 'yourself'
@@ -41,4 +43,13 @@ export const formatAmount = (amount: string | number): string => {
     .replace(/0+$/, '')
 
   return `${wholePart}.${significantDecimals}`
+}
+
+export const wordArrayToUint8Array = (wordArray: WordArray) => {
+  const { words, sigBytes } = wordArray
+  const u8 = new Uint8Array(sigBytes)
+  for (let i = 0; i < sigBytes; i++) {
+    u8[i] = (words[i >>> 2] >>> (24 - (i % 4) * 8)) & 0xff
+  }
+  return u8
 }

@@ -1,8 +1,8 @@
-import AsyncStorage from '@react-native-async-storage/async-storage'
 import { Platform } from 'react-native'
 import * as Device from 'expo-device'
 import { API_BASE_URL } from '../constants/api'
-const AUTH_STORAGE_KEY = '@lucid_auth'
+import { storeAuthToken, getAuthToken } from './secureStorage'
+
 const ONE_DAY_MS = 24 * 60 * 60 * 1000
 
 // Debug helper
@@ -135,8 +135,7 @@ async function refreshSession(jwt: string): Promise<AuthResponse> {
 
 export async function getOrRefreshAuth(): Promise<AuthResponse> {
   try {
-    const storedAuth = await AsyncStorage.getItem(AUTH_STORAGE_KEY)
-    const auth = storedAuth ? JSON.parse(storedAuth) : null
+    const auth = await getAuthToken()
 
     if (auth?.data?.jwt) {
       if (!needsRefresh(auth.data.jwt)) {
@@ -144,7 +143,7 @@ export async function getOrRefreshAuth(): Promise<AuthResponse> {
       }
       try {
         const refreshed = await refreshSession(auth.data.jwt)
-        await AsyncStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(refreshed))
+        await storeAuthToken(refreshed)
         return refreshed
       } catch (error) {
         debugLog(
@@ -155,7 +154,7 @@ export async function getOrRefreshAuth(): Promise<AuthResponse> {
     }
 
     const newAuth = await registerDevice()
-    await AsyncStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(newAuth))
+    await storeAuthToken(newAuth)
     return newAuth
   } catch (error) {
     debugLog(

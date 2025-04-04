@@ -143,48 +143,4 @@ export class TokenInfoService {
       return null
     }
   }
-
-  public getSimulationSummary(simulationData: SimulationData): Array<{
-    totalAmount: string
-    assetSymbol: string
-    assetIcon: string
-    warning?: string
-  }> {
-    // Group changes by asset symbol to sum amounts
-    const tokenSummaries = new Map<
-      string,
-      {
-        totalAmount: string
-        assetSymbol: string
-        assetIcon: string
-        warning?: string
-      }
-    >()
-
-    simulationData.changes.forEach((change) => {
-      const currentSummary = tokenSummaries.get(change.assetSymbol) || {
-        totalAmount: '0',
-        assetSymbol: change.assetSymbol,
-        assetIcon: change.assetIcon,
-        warning: change.warning,
-      }
-
-      // Convert amounts to numbers for addition
-      const currentAmount = parseFloat(currentSummary.totalAmount)
-      const changeAmount = parseFloat(change.amount)
-
-      // Add or subtract based on change type
-      const newAmount =
-        change.type === 'increase'
-          ? currentAmount + changeAmount
-          : currentAmount - changeAmount
-
-      tokenSummaries.set(change.assetSymbol, {
-        ...currentSummary,
-        totalAmount: newAmount.toString(),
-      })
-    })
-
-    return Array.from(tokenSummaries.values())
-  }
 }

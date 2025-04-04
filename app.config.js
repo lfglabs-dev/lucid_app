@@ -7,6 +7,7 @@ module.exports = {
     icon: './assets/icon.png',
     userInterfaceStyle: 'light',
     newArchEnabled: true,
+    plugins: ['expo-secure-store'],
     splash: {
       image: './assets/splash-icon.png',
       resizeMode: 'contain',

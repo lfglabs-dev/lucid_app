@@ -4,7 +4,11 @@ import { fetchLinkedDevices, LinkedDevice } from '../../services/api'
 
 const DeviceList = ({ devices }: { devices: LinkedDevice[] }) => {
   if (devices.length === 0) {
-    return null
+    return (
+      <View style={styles.deviceSection}>
+        <Text style={styles.deviceName}>No linked devices</Text>
+      </View>
+    )
   }
 
   return (

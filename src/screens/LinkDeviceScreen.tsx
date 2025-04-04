@@ -12,6 +12,7 @@ import { getCurrentAuthToken } from '../services/auth'
 import { API_BASE_URL } from '../constants/api'
 import { SuccessView } from '../components/SuccessView'
 import { useIsFocused } from '@react-navigation/native'
+import { storeDecryptionKey } from '../services/secureStorage'
 
 export const LinkDeviceScreen = () => {
   const [permission, requestPermission] = useCameraPermissions()
@@ -85,6 +86,7 @@ export const LinkDeviceScreen = () => {
 
     try {
       const qrData = JSON.parse(data)
+      console.log('[LinkDevice] QR data:', qrData)
 
       // Validate required fields
       if (!qrData.app || !qrData.token) {
@@ -109,6 +111,24 @@ export const LinkDeviceScreen = () => {
       if (!isLinked) {
         console.error('[LinkDevice] API linking failed')
         throw new Error('Failed to link token with server')
+      }
+
+      // Store the decryption key if provided
+      if (qrData.decryptionKey) {
+        try {
+          // Extract just the key material (k property) from the JWK object
+          const keyMaterial = qrData.decryptionKey.k
+          if (!keyMaterial) {
+            console.error(
+              '[LinkDevice] No key material found in decryption key'
+            )
+            throw new Error('Invalid decryption key format')
+          }
+          await storeDecryptionKey(String(keyMaterial))
+        } catch (error) {
+          console.error('[LinkDevice] Error storing decryption key:', error)
+          // Continue with the linking process even if storing the key fails
+        }
       }
 
       // Set device name and show success view

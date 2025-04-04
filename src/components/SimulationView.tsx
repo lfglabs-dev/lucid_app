@@ -10,9 +10,7 @@ interface SimulationViewProps {
   simulationData: SimulationData
 }
 
-export const SimulationView = ({
-  simulationData,
-}: SimulationViewProps) => {
+export const SimulationView = ({ simulationData }: SimulationViewProps) => {
   const [chainInfo, setChainInfo] = useState<TokenInfo | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const tokenInfoService = TokenInfoService.getInstance()
