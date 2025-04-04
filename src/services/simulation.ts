@@ -553,10 +553,10 @@ export class SimulationParser {
           this.to,
           BigInt(this.value),
           dataHash,
-          0, // operation (0 for CALL)
-          BigInt(this.gas),
+          this.isMulticall() ? 1 : 0, // operation (0 for CALL)
+          0n,
           0n, // baseGas
-          BigInt(this.maxFeePerGas),
+          0n,
           '0x0000000000000000000000000000000000000000', // gasToken (ETH)
           '0x0000000000000000000000000000000000000000', // refundReceiver
           BigInt(this.nonce), // nonce (will be set by the Safe contract)

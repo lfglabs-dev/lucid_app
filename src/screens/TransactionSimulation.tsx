@@ -168,7 +168,7 @@ export const TransactionSimulation = () => {
       <ConfirmVerification
         onConfirm={handleConfirm}
         onDecline={handleDecline}
-        confirmText={currentStep === 'simulation' ? 'Continue' : 'Sign'}
+        confirmText={currentStep === 'simulation' ? 'Continue' : 'Confirm'}
         declineText="Decline"
       />
     </View>
