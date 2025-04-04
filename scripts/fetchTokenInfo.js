@@ -5,7 +5,7 @@ const fetch = (...args) =>
 async function fetchTokenInfo() {
   const commitHash = 'c8287b6212fa26cfce025e7741998a3c70d84ec8'
   const tokenAddress = ethers
-    .getAddress('0xbcca60bb61934080951369a648fb03df4f96263c')
+    .getAddress('0x9d1089802ee608ba84c5c98211afe5f37f96b36c')
     .toLowerCase()
   const url = `https://raw.githubusercontent.com/lfglabs-dev/lucid_tokens/${commitHash}/tokens/ethereum/${tokenAddress}.json`
   console.log('Fetching token info from:', url)

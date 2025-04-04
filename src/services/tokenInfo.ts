@@ -1,7 +1,7 @@
 import { ethers } from 'ethers'
 import { TokenInfo } from '../types'
 import { formatAddress } from './utils'
-import { SimulationData } from './simulation'
+import { QUICKNODE_RPC } from '../constants/api'
 
 export class TokenInfoService {
   private static instance: TokenInfoService
@@ -27,21 +27,17 @@ export class TokenInfoService {
   private async getTokenInfo(tokenAddress: string): Promise<TokenInfo | null> {
     try {
       const url = `https://raw.githubusercontent.com/lfglabs-dev/lucid_tokens/${this.TOKEN_REPO_COMMIT}/tokens/ethereum/${ethers.getAddress(tokenAddress).toLowerCase()}.json`
+      console.log('Fetching token info from:', url)
       const response = await fetch(url)
 
       if (!response.ok) {
         console.log(
-          'Token metadata not found in lucid_tokens, using default values'
+          'Token metadata not found in lucid_tokens for address: ',
+          ethers.getAddress(tokenAddress),
+          ' attempting to fetch from RPC'
         )
-        return {
-          chainId: '0x1',
-          address: tokenAddress,
-          name: `Token ${formatAddress(tokenAddress)}`,
-          symbol: `${formatAddress(tokenAddress)}`,
-          decimals: 18,
-          icon: '﹖',
-          warning: 'Unknown token - verify contract address',
-        }
+        // Try to fetch from RPC
+        return await this.getTokenInfoFromRPC(tokenAddress)
       }
 
       const data = await response.json()
@@ -59,6 +55,45 @@ export class TokenInfoService {
     } catch (error) {
       console.error('Error fetching token info:', error)
       return null
+    }
+  }
+
+  private async getTokenInfoFromRPC(tokenAddress: string): Promise<TokenInfo | null> {
+    try {
+      // Use RPC API for token metadata
+      const provider = new ethers.JsonRpcProvider(QUICKNODE_RPC)
+      
+      // Call the RPC-specific endpoint
+      const response = await provider.send(
+        'qn_getTokenMetadataByContractAddress',
+        [{contract: tokenAddress}]
+      )
+      
+      // The response contains the token data directly
+      if (response && response.name) {
+        return {
+          chainId: '0x1',
+          address: tokenAddress,
+          name: response.name,
+          symbol: formatAddress(tokenAddress),
+          decimals: Number(response.decimals),
+          icon: '﹖', // RPC API doesn't provide an icon
+          warning: 'This token is not verified, use at your own risk',
+        }
+      }
+    } catch (error) {
+      console.error('Error fetching from RPC API:', error)
+    }
+    
+    // Single fallback for both error case and no data case
+    return {
+      chainId: '0x1',
+      address: tokenAddress,
+      name: `Token ${formatAddress(tokenAddress)}`,
+      symbol: `${formatAddress(tokenAddress)}`,
+      decimals: 18,
+      icon: '﹖',
+      warning: 'Unknown token - verify contract address',
     }
   }
 
