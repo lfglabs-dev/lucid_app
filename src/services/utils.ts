@@ -1,4 +1,5 @@
-import { WordArray } from "crypto-es/lib/core"
+import { WordArray } from 'crypto-es/lib/core'
+import { ethers } from 'ethers'
 
 export const formatAddress = (address: string) => {
   if (address === 'yourself') {
@@ -52,4 +53,19 @@ export const wordArrayToUint8Array = (wordArray: WordArray) => {
     u8[i] = (words[i >>> 2] >>> (24 - (i % 4) * 8)) & 0xff
   }
   return u8
+}
+
+// Helper function to format values to hex
+export const toHex = (value: string | number | undefined | null): string => {
+  if (!value || value === '0') return '0x0'
+
+  // If it's already a hex string, clean it
+  if (typeof value === 'string' && value.startsWith('0x')) {
+    const cleanHex = value.slice(2).replace(/^0+/, '') || '0'
+    return `0x${cleanHex}`
+  }
+
+  // If it's a number or decimal string, convert to hex and clean
+  const hex = ethers.toBeHex(value)
+  return hex.replace(/^0x0+/, '0x') || '0x0'
 }

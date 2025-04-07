@@ -58,17 +58,19 @@ export class TokenInfoService {
     }
   }
 
-  private async getTokenInfoFromRPC(tokenAddress: string): Promise<TokenInfo | null> {
+  private async getTokenInfoFromRPC(
+    tokenAddress: string
+  ): Promise<TokenInfo | null> {
     try {
       // Use RPC API for token metadata
       const provider = new ethers.JsonRpcProvider(QUICKNODE_RPC)
-      
+
       // Call the RPC-specific endpoint
       const response = await provider.send(
         'qn_getTokenMetadataByContractAddress',
-        [{contract: tokenAddress}]
+        [{ contract: tokenAddress }]
       )
-      
+
       // The response contains the token data directly
       if (response && response.name) {
         return {
@@ -84,7 +86,7 @@ export class TokenInfoService {
     } catch (error) {
       console.error('Error fetching from RPC API:', error)
     }
-    
+
     // Single fallback for both error case and no data case
     return {
       chainId: '0x1',

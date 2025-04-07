@@ -23,10 +23,15 @@ interface ApiResponse {
 }
 
 // Helper function to decrypt a single transaction
-async function decryptTransaction(encryptedContent: string, decryptionKey: string): Promise<EIP712SafeTx> {
+async function decryptTransaction(
+  encryptedContent: string,
+  decryptionKey: string
+): Promise<EIP712SafeTx> {
   try {
     // 1. Decode base64 input to Uint8Array
-    const binary = Uint8Array.from(atob(encryptedContent), (c) => c.charCodeAt(0))
+    const binary = Uint8Array.from(atob(encryptedContent), (c) =>
+      c.charCodeAt(0)
+    )
 
     // 2. Extract IV (first 16 bytes)
     const ivBytes = binary.slice(0, 16)
@@ -50,7 +55,12 @@ async function decryptTransaction(encryptedContent: string, decryptionKey: strin
     const decryptedBytes = wordArrayToUint8Array(decrypted)
 
     // 7. Decode CBOR to get original JSON
-    const decoded = decode(decryptedBytes.buffer.slice(decryptedBytes.byteOffset, decryptedBytes.byteOffset + decryptedBytes.byteLength))
+    const decoded = decode(
+      decryptedBytes.buffer.slice(
+        decryptedBytes.byteOffset,
+        decryptedBytes.byteOffset + decryptedBytes.byteLength
+      )
+    )
 
     return decoded as EIP712SafeTx
   } catch (error) {
@@ -102,7 +112,10 @@ export const fetchTransactions = async (
     const decryptedTransactions = await Promise.all(
       data.data.requests.map(async (request) => ({
         ...request,
-        content: await decryptTransaction(request.content as unknown as string, decryptionKey)
+        content: await decryptTransaction(
+          request.content as unknown as string,
+          decryptionKey
+        ),
       }))
     )
 

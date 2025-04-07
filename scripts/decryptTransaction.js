@@ -43,7 +43,12 @@ try {
   const decryptedBytes = wordArrayToUint8Array(decrypted)
 
   // 7. Decode CBOR to get original JSON
-    const decoded = cbor.decode(decryptedBytes.buffer.slice(decryptedBytes.byteOffset, decryptedBytes.byteOffset + decryptedBytes.byteLength))
+  const decoded = cbor.decode(
+    decryptedBytes.buffer.slice(
+      decryptedBytes.byteOffset,
+      decryptedBytes.byteOffset + decryptedBytes.byteLength
+    )
+  )
 
   // 🎉 Final result
   console.log('\n✅ Decoded JSON:\n', JSON.stringify(decoded, null, 2))
