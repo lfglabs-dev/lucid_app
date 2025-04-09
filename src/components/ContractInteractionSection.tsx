@@ -2,8 +2,7 @@ import React from 'react'
 import { View, Text, StyleSheet } from 'react-native'
 import { TokenRow } from './TokenRow'
 import { formatAddress } from '../services/utils'
-import { SimulationData } from '../services/simulation'
-import { TokenInfo } from '../types'
+import { SimulationData, TokenInfo } from '../types'
 
 interface ContractInteractionSectionProps {
   chainInfo: TokenInfo

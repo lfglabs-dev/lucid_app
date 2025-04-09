@@ -1,18 +1,17 @@
 import React, { useState, useEffect } from 'react'
 import { View, StyleSheet, ScrollView, Text } from 'react-native'
 import { RouteProp, useRoute, useNavigation } from '@react-navigation/native'
-import { Transaction } from '../types'
+import { Transaction, VerificationStep } from '../types'
 import { TransactionStackParamList } from '../navigation/AppNavigator'
 import { NativeStackNavigationProp } from '@react-navigation/native-stack'
 import { useStore } from '../store/useStore'
 import { ConfirmVerification } from '../components/ConfirmVerification'
 import { TransactionVerificationsView } from '../components/TransactionVerificationsView'
 import { SuccessView } from '../components/SuccessView'
-import {
-  SimulationData,
-  SimulationParser,
-  SimulationError,
-} from '../services/simulation'
+import { SafeSimulation } from '../services/safeSimulation'
+import { EoaSimulation } from '../services/eoaSimulation'
+import { SimulationError } from '../services/baseSimulation'
+import { SimulationData } from '../types'
 
 type NavigationProp = NativeStackNavigationProp<TransactionStackParamList>
 
@@ -21,8 +20,6 @@ type RouteParams = {
     transaction: Transaction
   }
 }
-
-export type VerificationStep = 'simulation' | 'verification' | 'success'
 
 interface SimulationErrorState {
   message: string
@@ -41,21 +38,16 @@ export const TransactionSimulation = () => {
   )
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<SimulationErrorState | null>(null)
-  const [domainHash, setDomainHash] = useState<string>('')
-  const [messageHash, setMessageHash] = useState<string>('')
+  const [domainHash, setDomainHash] = useState<string>('0x0')
+  const [messageHash, setMessageHash] = useState<string>('0x0')
+  const [transactionHash, setTransactionHash] = useState<string>('0x0')
+  const { ledgerHashCheckEnabled } = useStore((state) => state.settings)
 
   useEffect(() => {
-    const simulationParser = new SimulationParser({
-      from: transaction.from,
-      to: transaction.to,
-      data: transaction.data,
-      value: transaction.value,
-      gas: transaction.gas,
-      maxFeePerGas: transaction.maxFeePerGas,
-      maxPriorityFeePerGas: transaction.maxPriorityFeePerGas,
-      chainId: transaction.chainId,
-      nonce: transaction.nonce,
-    })
+    const txSimulation =
+      transaction.requestType === 'eip712'
+        ? new SafeSimulation(transaction)
+        : new EoaSimulation(transaction)
 
     const simulateTransaction = async () => {
       try {
@@ -67,23 +59,28 @@ export const TransactionSimulation = () => {
           throw new SimulationError('Transaction data is missing')
         }
 
-        // Calculate domain hash
-        setDomainHash(simulationParser.calculateDomainHash())
+        // Only calculate Safe-specific hashes for Safe transactions
+        if (
+          transaction.requestType === 'eip712' &&
+          txSimulation instanceof SafeSimulation
+        ) {
+          setDomainHash(txSimulation.calculateDomainHash())
+          setMessageHash(txSimulation.calculateMessageHash())
+        } else if (
+          transaction.requestType === 'eoa_transaction' &&
+          txSimulation instanceof EoaSimulation
+        ) {
+          setTransactionHash(txSimulation.calculateTransactionHash())
+        }
 
-        // Calculate message hash
-        setMessageHash(simulationParser.calculateMessageHash())
-
-        const result = await simulationParser.simulateSafeTransaction()
-
+        const result = await txSimulation.simulateTransaction()
         setSimulationData(result)
-
-        console.log('Simulation data:', result)
       } catch (err) {
         if (err instanceof SimulationError) {
           setError({
             message: err.message,
             code: err.code,
-            data: err.data,
+            data: err.callContent,
           })
         } else {
           setError({
@@ -100,7 +97,12 @@ export const TransactionSimulation = () => {
 
   const handleConfirm = () => {
     if (currentStep === 'simulation') {
-      setCurrentStep('verification')
+      if (ledgerHashCheckEnabled) {
+        setCurrentStep('verification')
+      } else {
+        updateTransactionStatus(transaction.id, 'signed')
+        setCurrentStep('success')
+      }
     } else if (currentStep === 'verification') {
       updateTransactionStatus(transaction.id, 'signed')
       setCurrentStep('success')
@@ -161,6 +163,7 @@ export const TransactionSimulation = () => {
         <TransactionVerificationsView
           messageHash={messageHash}
           domainHash={domainHash}
+          transactionHash={transactionHash}
           simulationData={simulationData!}
           currentStep={currentStep}
         />

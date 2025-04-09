@@ -1,8 +1,7 @@
 import React, { useEffect, useState } from 'react'
 import { View, Text, StyleSheet, Image, ActivityIndicator } from 'react-native'
 import { TokenInfoService } from '../services/tokenInfo'
-import { TokenInfo } from '../types'
-import { SimulationData } from '../services/simulation'
+import { TokenInfo, SimulationData } from '../types'
 import { formatAmount } from '../services/utils'
 import { ContractInteractionSection } from './ContractInteractionSection'
 

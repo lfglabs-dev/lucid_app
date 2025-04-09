@@ -38,7 +38,7 @@ export const TransactionItem: React.FC<TransactionItemProps> = ({
   isRefreshing,
 }) => {
   const navigation = useNavigation<NavigationProp>()
-  const { updateTransactionStatus, getTransactionStatus } = useStore()
+  const { updateTransactionStatus, getTransactionStatus, getAddressLabel } = useStore()
   const isPending = item.status === 'pending'
   const isVerified = item.status === 'signed'
   const isRejected = item.status === 'rejected'
@@ -66,6 +66,11 @@ export const TransactionItem: React.FC<TransactionItemProps> = ({
     }
   }
 
+  const getLabelOrAddress = (address: string) => {
+    const label = getAddressLabel(address)
+    return label || formatAddress(address)
+  }
+
   return (
     <TouchableOpacity
       style={[
@@ -84,14 +89,18 @@ export const TransactionItem: React.FC<TransactionItemProps> = ({
             isVerified && styles.verifiedTitle,
           ]}
         >
-          Transaction to {formatAddress(item.to)}
+          {' '}
+          {getLabelOrAddress(item.from)}{' '}
+          {new Date(item.timestamp).toLocaleDateString() === new Date().toLocaleDateString()
+            ? `at ${new Date(item.timestamp).toLocaleTimeString('en-US', {
+                timeStyle: 'short',
+              })}`
+            : `on ${new Date(item.timestamp).toLocaleDateString('en-US', {
+                dateStyle: 'short',
+              })}`}
         </Text>
         <Text style={styles.timestamp}>
-          from {formatAddress(item.from)} at{' '}
-          {new Date(item.timestamp).toLocaleString('en-US', {
-            dateStyle: 'short',
-            timeStyle: 'short',
-          })}
+          Transaction to {formatAddress(item.to)}
         </Text>
       </View>
       <View style={styles.statusContainer}>

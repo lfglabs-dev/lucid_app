@@ -1,5 +1,3 @@
-import { toHex } from '../services/utils'
-
 export interface TokenInfo {
   chainId: string
   address: string
@@ -10,9 +8,12 @@ export interface TokenInfo {
   warning?: string // Optional warning message for unknown or unverified tokens
 }
 
+export type RequestType = 'eip712' | 'eoa_transaction'
+
 export interface Transaction {
   id: string
   status: 'pending' | 'signed' | 'rejected'
+  requestType: RequestType
   timestamp: number
   chainId: string
   from: string
@@ -42,40 +43,16 @@ export interface EIP712SafeTx {
   refundReceiver: string
 }
 
-// Gas constants for transaction simulation
-const DEFAULT_GAS_LIMIT = '0x7A120' // 100,000 gas
-const DEFAULT_GAS_PRICE = '0x2E90EDD00' // 12 Gwei
-
-// Helper function to create a Transaction from a Safe transaction
-export const createTransactionFromSafeTx = (
-  safeTx: EIP712SafeTx,
-  requestId: string,
-  creationDate: string
-): Transaction => {
-  return {
-    id: requestId,
-    status: 'pending',
-    timestamp: new Date(creationDate).getTime(),
-    chainId: safeTx.chainId,
-    from: safeTx.safeAddress,
-    to: safeTx.to,
-    value: toHex(safeTx.value),
-    data: safeTx.data,
-    gas: DEFAULT_GAS_LIMIT,
-    maxFeePerGas: DEFAULT_GAS_PRICE,
-    maxPriorityFeePerGas: DEFAULT_GAS_PRICE,
-    nonce: safeTx.nonce,
-    originalSafeTx: {
-      ...safeTx,
-      nonce: safeTx.nonce,
-      chainId: safeTx.chainId,
-      value: toHex(safeTx.value),
-      safeTxGas: DEFAULT_GAS_LIMIT,
-      baseGas: safeTx.baseGas,
-      gasPrice: DEFAULT_GAS_PRICE,
-      operation: safeTx.operation,
-    },
-  }
+export interface EoaTx {
+  nonce: string
+  chainId: string
+  from: string
+  to: string
+  value: string
+  data: string
+  gas: string
+  maxFeePerGas: string
+  maxPriorityFeePerGas: string
 }
 
 export interface PairedDevice {
@@ -87,8 +64,66 @@ export interface PairedDevice {
 
 export interface Settings {
   ledgerHashCheckEnabled: boolean
-  safeHashCheckEnabled: boolean
-  clearSigningEnabled: boolean
   pairedDevices: PairedDevice[]
   customRpcUrl: string | null
 }
+
+// Types
+export interface EthereumLog {
+  address: string
+  topics: string[]
+  data: string
+  blockNumber?: string
+  transactionHash?: string
+  logIndex?: string
+}
+
+export interface SimulationResponse {
+  result?: Array<{
+    number: string
+    baseFeePerGas: string
+    gasUsed: string
+    timestamp: string
+    calls?: Array<{
+      status: string
+      logs?: EthereumLog[]
+      gasUsed: string
+      error?: {
+        code?: number
+        message: string
+        data?: string
+      }
+    }>
+  }>
+  error?: {
+    code?: number
+    message: string
+    data?: string
+  }
+}
+
+export type AssetChangeDirection = 'decrease' | 'increase'
+export type AssetChangeType = 'approval' | 'transfer'
+
+export type AssetChanges = {
+  type: AssetChangeType
+  direction: AssetChangeDirection
+  assetIcon: string
+  assetSymbol: string
+  amount: string
+  from?: string
+  to?: string
+  warning?: string
+}
+
+export interface SimulationData {
+  contractAddress: string
+  from: string
+  to: string
+  changes: AssetChanges[]
+  chainId: string
+  operation: string
+  requestType: RequestType
+}
+
+export type VerificationStep = 'simulation' | 'verification' | 'success'

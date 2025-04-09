@@ -1,44 +1,44 @@
 import { create } from 'zustand'
-import { Transaction, Settings, createTransactionFromSafeTx } from '../types'
+import { Transaction, Settings } from '../types'
 import { fetchTransactions as fetchTransactionsFromApi } from '../services/api'
 import { QUICKNODE_RPC } from '../constants/api'
+import { forgeTransaction } from '../services/utils'
+
+interface AddressLabel {
+  address: string
+  label: string
+}
 
 interface AppState {
   transactions: Transaction[]
   settings: Settings
+  addressLabels: AddressLabel[]
   toggleLedgerHashCheck: () => void
-  toggleSafeHashCheck: () => void
   removePairedDevice: (id: string) => void
   updateTransactionStatus: (id: string, status: Transaction['status']) => void
   fetchTransactions: (token: string) => Promise<void>
   getTransactionStatus: (id: string) => Transaction['status']
   setCustomRpcUrl: (url: string | null) => void
   getActiveRpcUrl: () => string
+  addAddressLabel: (address: string, label: string) => void
+  removeAddressLabel: (address: string) => void
+  getAddressLabel: (address: string) => string | undefined
 }
 
 export const useStore = create<AppState>((set, get) => ({
   transactions: [],
   settings: {
-    clearSigningEnabled: true,
-    ledgerHashCheckEnabled: false,
-    safeHashCheckEnabled: false,
+    ledgerHashCheckEnabled: true,
     pairedDevices: [],
     customRpcUrl: null,
   },
+  addressLabels: [],
 
   toggleLedgerHashCheck: () =>
     set((state) => ({
       settings: {
         ...state.settings,
         ledgerHashCheckEnabled: !state.settings.ledgerHashCheckEnabled,
-      },
-    })),
-
-  toggleSafeHashCheck: () =>
-    set((state) => ({
-      settings: {
-        ...state.settings,
-        safeHashCheckEnabled: !state.settings.safeHashCheckEnabled,
       },
     })),
 
@@ -59,27 +59,79 @@ export const useStore = create<AppState>((set, get) => ({
 
   fetchTransactions: async (token: string) => {
     try {
-      const requests = await fetchTransactionsFromApi(token)
-      const transactionMap = new Map<string, Transaction>()
+      // Get transactions from API
+      const apiTransactions = await fetchTransactionsFromApi(token)
 
-      // First, add existing transactions to the map
-      get().transactions.forEach((tx) => {
-        transactionMap.set(tx.id, tx)
+      // Get current transactions from store
+      const currentTransactions = get().transactions
+
+      // Create a map of current transactions by ID for quick lookup
+      const currentTransactionsMap = new Map<string, Transaction>()
+      currentTransactions.forEach((tx) => {
+        currentTransactionsMap.set(tx.id, tx)
       })
 
-      // Then add new transactions, overwriting any duplicates
-      requests.forEach((request) => {
-        const tx = createTransactionFromSafeTx(
+      // Process transactions from API
+      const newTransactions: Transaction[] = []
+      const existingTransactions: Transaction[] = []
+      const newAddresses = new Set<string>()
+
+      apiTransactions.forEach((request) => {
+        const tx = forgeTransaction(
           request.content,
           request.request_id,
           request.creation_date
         )
-        transactionMap.set(tx.id, tx)
+
+        // Collect addresses from the transaction
+        newAddresses.add(tx.from.toLowerCase())
+
+        // Check if this transaction already exists in our store
+        if (currentTransactionsMap.has(tx.id)) {
+          // Keep the existing transaction's status
+          const existingTx = currentTransactionsMap.get(tx.id)!
+          existingTransactions.push({
+            ...tx,
+            status: existingTx.status,
+          })
+        } else {
+          // This is a new transaction
+          newTransactions.push(tx)
+        }
       })
 
-      // Convert map values back to array
-      const uniqueTransactions = Array.from(transactionMap.values())
-      set({ transactions: uniqueTransactions })
+      // Combine transactions with new ones at the top
+      const combinedTransactions = [...newTransactions, ...existingTransactions]
+
+      // Sort transactions by creation date in descending order (most recent first)
+      const sortedTransactions = combinedTransactions.sort((a, b) => {
+        return b.timestamp - a.timestamp
+      })
+
+      // Get current address labels
+      const currentLabels = get().addressLabels
+      const currentLabelAddresses = new Set(
+        currentLabels.map((label) => label.address.toLowerCase())
+      )
+
+      // Add new addresses with default labels
+      const newLabels: AddressLabel[] = []
+      let eoaCounter = currentLabels.length + 1
+
+      newAddresses.forEach((address) => {
+        if (!currentLabelAddresses.has(address)) {
+          newLabels.push({
+            address,
+            label: `Account ${eoaCounter++}`,
+          })
+        }
+      })
+
+      // Update the store with new transactions and labels
+      set((state) => ({
+        transactions: sortedTransactions,
+        addressLabels: [...state.addressLabels, ...newLabels],
+      }))
     } catch (error) {
       console.error('Error fetching transactions:', error)
     }
@@ -107,4 +159,40 @@ export const useStore = create<AppState>((set, get) => ({
     const { settings } = get()
     return settings.customRpcUrl || QUICKNODE_RPC
   },
+
+  addAddressLabel: (address: string, label: string) =>
+    set((state) => {
+      // Check if address already has a label
+      const existingIndex = state.addressLabels.findIndex(
+        (item) => item.address.toLowerCase() === address.toLowerCase()
+      )
+
+      if (existingIndex >= 0) {
+        // Update existing label
+        const updatedLabels = [...state.addressLabels]
+        updatedLabels[existingIndex] = { address, label }
+        return { addressLabels: updatedLabels }
+      } else {
+        // Add new label
+        return {
+          addressLabels: [...state.addressLabels, { address, label }],
+        }
+      }
+    }),
+
+  removeAddressLabel: (address: string) =>
+    set((state) => ({
+      addressLabels: state.addressLabels.filter(
+        (item) => item.address.toLowerCase() !== address.toLowerCase()
+      ),
+    })),
+
+  getAddressLabel: (address: string) => {
+    const { addressLabels } = get()
+    const labelItem = addressLabels.find(
+      (item) => item.address.toLowerCase() === address.toLowerCase()
+    )
+    return labelItem?.label
+  },
+  
 }))

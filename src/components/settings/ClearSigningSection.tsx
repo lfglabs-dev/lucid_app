@@ -3,18 +3,11 @@ import { View, Text, StyleSheet, Switch } from 'react-native'
 import { useStore } from '../../store/useStore'
 
 export const ClearSigningSection = () => {
-  const { settings, toggleSafeHashCheck, toggleLedgerHashCheck } = useStore()
+  const { settings, toggleLedgerHashCheck } = useStore()
 
   return (
     <View style={styles.section}>
       <Text style={styles.sectionTitle}>Clear Signing</Text>
-      <View style={styles.settingRow}>
-        <Text style={styles.settingLabel}>Enable Safe hash Check</Text>
-        <Switch
-          value={settings.safeHashCheckEnabled}
-          onValueChange={toggleSafeHashCheck}
-        />
-      </View>
       <View style={styles.settingRow}>
         <Text style={styles.settingLabel}>Enable Ledger hash Check</Text>
         <Switch

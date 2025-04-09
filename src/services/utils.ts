@@ -1,5 +1,6 @@
 import { WordArray } from 'crypto-es/lib/core'
 import { ethers } from 'ethers'
+import { EIP712SafeTx, EoaTx, Transaction } from '../types'
 
 export const formatAddress = (address: string) => {
   if (address === 'yourself') {
@@ -55,17 +56,75 @@ export const wordArrayToUint8Array = (wordArray: WordArray) => {
   return u8
 }
 
-// Helper function to format values to hex
-export const toHex = (value: string | number | undefined | null): string => {
-  if (!value || value === '0') return '0x0'
+// ------------ 🔧 Sanitize Helpers ------------
 
-  // If it's already a hex string, clean it
+// Format hex-encoded numbers (e.g. gas, value, nonce, fees)
+export const toHexNumber = (
+  value: string | number | undefined | null
+): string => {
+  if (value === undefined || value === null || value === '0') return '0x0'
+
+  // Already hex
   if (typeof value === 'string' && value.startsWith('0x')) {
-    const cleanHex = value.slice(2).replace(/^0+/, '') || '0'
-    return `0x${cleanHex}`
+    let clean = value.slice(2).replace(/^0+/, '')
+    if (clean === '') clean = '0'
+    return '0x' + clean
   }
 
-  // If it's a number or decimal string, convert to hex and clean
+  // Number or decimal string → hex
   const hex = ethers.toBeHex(value)
-  return hex.replace(/^0x0+/, '0x') || '0x0'
+  return toHexNumber(hex) // re-use to strip leading zeros
+}
+
+// Format hex-encoded bytes (e.g. data, input, bytecode)
+export const toHexBytes = (value: string | undefined | null): string => {
+  if (!value || value === '0x' || value === '0') return '0x'
+  if (typeof value !== 'string') throw new Error('Invalid hex byte input')
+
+  let hex = value.startsWith('0x') ? value.slice(2) : value
+
+  if (hex.length % 2 !== 0) {
+    hex = '0' + hex // pad to even length if needed
+  }
+
+  return '0x' + hex.toLowerCase()
+}
+
+// Format Ethereum addresses or other hex values
+export const toHexAddress = (value: string | undefined | null): string => {
+  if (!value) throw new Error('Invalid address')
+  return ethers.getAddress(value.toLowerCase())
+}
+
+// ------------ 🚀 Forge Transaction ------------
+
+const DEFAULT_GAS_LIMIT = '0x7A120' // 500,000 gas
+const DEFAULT_GAS_PRICE = '0x2E90EDD00' // 12 Gwei
+
+export const forgeTransaction = (
+  tx: EIP712SafeTx | EoaTx,
+  requestId: string,
+  creationDate: string
+): Transaction => {
+  const isSafeTx = 'safeAddress' in tx
+
+  return {
+    id: requestId,
+    status: 'pending',
+    requestType: isSafeTx ? 'eip712' : 'eoa_transaction',
+    timestamp: new Date(creationDate).getTime(),
+
+    chainId: toHexNumber(tx.chainId),
+    from: isSafeTx ? toHexAddress(tx.safeAddress) : toHexAddress(tx.from),
+    to: toHexAddress(tx.to),
+    value: toHexNumber(tx.value),
+    data: toHexBytes(tx.data),
+
+    gas: toHexNumber(isSafeTx ? DEFAULT_GAS_LIMIT : tx.gas),
+    maxFeePerGas: toHexNumber(isSafeTx ? DEFAULT_GAS_PRICE : tx.maxFeePerGas),
+    maxPriorityFeePerGas: toHexNumber(
+      isSafeTx ? DEFAULT_GAS_PRICE : tx.maxPriorityFeePerGas
+    ),
+    nonce: toHexNumber(tx.nonce),
+  }
 }

@@ -1,30 +1,48 @@
 import React from 'react'
 import { View, StyleSheet } from 'react-native'
-import { SimulationData } from '../services/simulation'
 import { SimulationView } from './SimulationView'
-import { LedgerSimulation } from './LedgerSimulation'
-import { VerificationStep } from '../screens/TransactionSimulation'
+import { EoaHwSimulation } from './EoaHwSimulation'
+import { SafeHwSimulation } from './SafeHwSimulation'
+import { SuccessView } from './SuccessView'
+import { VerificationStep, SimulationData } from '../types'
 
 interface TransactionVerificationsViewProps {
+  currentStep: VerificationStep
+  simulationData: SimulationData
   messageHash: string
   domainHash: string
-  simulationData?: SimulationData
-  currentStep: VerificationStep
+  transactionHash: string
 }
 
 export const TransactionVerificationsView = ({
+  currentStep,
+  simulationData,
   messageHash,
   domainHash,
-  simulationData,
-  currentStep,
+  transactionHash,
 }: TransactionVerificationsViewProps) => {
+  const isEoaTransaction = simulationData?.requestType === 'eoa_transaction'
+
   return (
     <View style={styles.container}>
-      {simulationData && currentStep === 'simulation' ? (
+      {currentStep === 'simulation' && (
         <SimulationView simulationData={simulationData} />
-      ) : currentStep === 'verification' ? (
-        <LedgerSimulation messageHash={messageHash} domainHash={domainHash} />
-      ) : null}
+      )}
+      {currentStep === 'verification' &&
+        (isEoaTransaction ? (
+          <EoaHwSimulation
+            transactionHash={transactionHash}
+            to={simulationData.to}
+          />
+        ) : (
+          <SafeHwSimulation messageHash={messageHash} domainHash={domainHash} />
+        ))}
+      {currentStep === 'success' && (
+        <SuccessView
+          title="Transaction Verified"
+          description="Your transaction has been verified successfully"
+        />
+      )}
     </View>
   )
 }
@@ -33,64 +51,5 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#fff',
-  },
-  header: {
-    padding: 20,
-  },
-  title: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    marginBottom: 8,
-  },
-  subtitle: {
-    fontSize: 16,
-    color: '#6c757d',
-  },
-  section: {
-    padding: 20,
-    borderTopWidth: 1,
-    borderTopColor: '#e9ecef',
-  },
-  sectionTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    marginBottom: 12,
-    color: '#212529',
-  },
-
-  hashContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#f8f9fa',
-    padding: 16,
-    borderRadius: 8,
-    marginBottom: 12,
-  },
-
-  hashHighlightMessageHash: {
-    fontSize: 35,
-    fontWeight: 'bold',
-    color: 'orange',
-    backgroundColor: '#ffefc4',
-    padding: 4,
-    borderRadius: 4,
-  },
-  hashHighlightDomainHash: {
-    fontSize: 35,
-    fontWeight: 'bold',
-    color: 'purple',
-    backgroundColor: '#e8d5ff',
-    padding: 4,
-    borderRadius: 4,
-  },
-  hashText: {
-    fontSize: 35,
-    color: '#495057',
-    marginHorizontal: 4,
-  },
-  verificationText: {
-    fontSize: 16,
-    color: '#495057',
-    fontStyle: 'italic',
   },
 })

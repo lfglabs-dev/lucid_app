@@ -27,7 +27,6 @@ export class TokenInfoService {
   private async getTokenInfo(tokenAddress: string): Promise<TokenInfo | null> {
     try {
       const url = `https://raw.githubusercontent.com/lfglabs-dev/lucid_tokens/${this.TOKEN_REPO_COMMIT}/tokens/ethereum/${ethers.getAddress(tokenAddress).toLowerCase()}.json`
-      console.log('Fetching token info from:', url)
       const response = await fetch(url)
 
       if (!response.ok) {

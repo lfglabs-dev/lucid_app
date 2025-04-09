@@ -1,19 +1,36 @@
-import React, { useState } from 'react'
-import { View, Text, StyleSheet, TextInput, Alert } from 'react-native'
+import React from 'react'
+import { View, Text, StyleSheet, Alert, TouchableOpacity } from 'react-native'
 import { useStore } from '../../store/useStore'
+import { MaterialIcons } from '@expo/vector-icons'
 
 export const RpcSection = () => {
   const { settings, setCustomRpcUrl } = useStore()
-  const [inputValue, setInputValue] = useState(settings.customRpcUrl || '')
 
-  const handleSave = () => {
-    if (inputValue.trim()) {
-      setCustomRpcUrl(inputValue.trim())
-      Alert.alert('Success', 'Custom RPC URL has been saved')
-    } else {
-      setCustomRpcUrl(null)
-      Alert.alert('Success', 'Custom RPC URL has been cleared')
-    }
+  const handleEditRpc = () => {
+    Alert.prompt(
+      'Edit RPC URL',
+      'Enter a custom RPC URL',
+      [
+        {
+          text: 'Cancel',
+          style: 'cancel',
+        },
+        {
+          text: 'Save',
+          onPress: (newRpcUrl) => {
+            if (newRpcUrl && newRpcUrl.trim()) {
+              setCustomRpcUrl(newRpcUrl.trim())
+              Alert.alert('Success', 'Custom RPC URL has been saved')
+            } else {
+              setCustomRpcUrl(null)
+              Alert.alert('Success', 'Custom RPC URL has been cleared')
+            }
+          },
+        },
+      ],
+      'plain-text',
+      settings.customRpcUrl || ''
+    )
   }
 
   return (
@@ -25,23 +42,21 @@ export const RpcSection = () => {
           simulation to work
         </Text>
       </View>
-      <View style={styles.inputContainer}>
-        <TextInput
-          style={styles.input}
-          value={inputValue}
-          onChangeText={setInputValue}
-          placeholder="Enter custom RPC URL"
-          placeholderTextColor="#999"
-        />
-        <Text style={styles.saveButton} onPress={handleSave}>
-          Save
-        </Text>
-      </View>
-      {settings.customRpcUrl && (
-        <Text style={styles.currentRpc}>
-          Current RPC: {settings.customRpcUrl}
-        </Text>
-      )}
+      <TouchableOpacity 
+        style={styles.rpcItem}
+        onPress={handleEditRpc}
+        activeOpacity={0.7}
+      >
+        <View style={styles.rpcContent}>
+          <View style={styles.rpcInfo}>
+            <Text style={styles.rpcLabel}>RPC URL</Text>
+            <Text style={styles.rpcValue}>
+              {settings.customRpcUrl || 'Default RPC'}
+            </Text>
+          </View>
+          <MaterialIcons name="edit" size={16} color="#666" style={styles.editIcon} />
+        </View>
+      </TouchableOpacity>
     </View>
   )
 }
@@ -68,28 +83,29 @@ const styles = StyleSheet.create({
     fontSize: 14,
     lineHeight: 20,
   },
-  inputContainer: {
+  rpcItem: {
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#eee',
+  },
+  rpcContent: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 12,
   },
-  input: {
+  rpcInfo: {
     flex: 1,
-    borderWidth: 1,
-    borderColor: '#ddd',
-    borderRadius: 8,
-    padding: 12,
-    fontSize: 16,
-    marginRight: 12,
   },
-  saveButton: {
-    color: '#007AFF',
+  rpcLabel: {
     fontSize: 16,
     fontWeight: '600',
+    color: '#1A1D1F',
+    marginBottom: 4,
   },
-  currentRpc: {
+  rpcValue: {
     fontSize: 14,
     color: '#666',
-    marginTop: 8,
+  },
+  editIcon: {
+    marginLeft: 8,
   },
 })

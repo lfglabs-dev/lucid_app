@@ -1,7 +1,7 @@
-import React, { useEffect, useRef } from 'react'
+import React, { useEffect, useRef, useState } from 'react'
 import { View, Text, StyleSheet } from 'react-native'
 import LottieView from 'lottie-react-native'
-import { useNavigation } from '@react-navigation/native'
+import { useNavigation, useIsFocused } from '@react-navigation/native'
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack'
 import type { CompositeNavigationProp } from '@react-navigation/native'
 import type { BottomTabNavigationProp } from '@react-navigation/bottom-tabs'
@@ -25,10 +25,31 @@ export const SuccessView = ({
   description,
   onComplete,
   navigateToTab = 'Transactions',
-  delay = 2500,
+  delay = 2000,
 }: SuccessViewProps) => {
   const navigation = useNavigation<NavigationProp>()
+  const isFocused = useIsFocused()
+  const [animationKey, setAnimationKey] = useState(0)
+  const lottieRef = useRef<LottieView>(null)
   const hasNavigated = useRef(false)
+
+  // Reset state when component becomes focused
+  useEffect(() => {
+    if (isFocused) {
+      hasNavigated.current = false
+      setAnimationKey((prevKey) => prevKey + 1)
+
+      // Manually play the animation after a short delay to ensure it's ready
+      const timer = setTimeout(() => {
+        if (lottieRef.current) {
+          lottieRef.current.reset()
+          lottieRef.current.play()
+        }
+      }, delay)
+
+      return () => clearTimeout(timer)
+    }
+  }, [isFocused])
 
   const handleAnimationFinish = () => {
     if (!hasNavigated.current) {
@@ -52,6 +73,8 @@ export const SuccessView = ({
     <View style={styles.container}>
       <View style={styles.content}>
         <LottieView
+          ref={lottieRef}
+          key={animationKey}
           source={require('../../assets/verifiedLottie.json')}
           autoPlay
           loop={false}
