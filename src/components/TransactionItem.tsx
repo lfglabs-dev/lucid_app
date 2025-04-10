@@ -38,7 +38,8 @@ export const TransactionItem: React.FC<TransactionItemProps> = ({
   isRefreshing,
 }) => {
   const navigation = useNavigation<NavigationProp>()
-  const { updateTransactionStatus, getTransactionStatus, getAddressLabel } = useStore()
+  const { updateTransactionStatus, getTransactionStatus, getAddressLabel } =
+    useStore()
   const isPending = item.status === 'pending'
   const isVerified = item.status === 'signed'
   const isRejected = item.status === 'rejected'
@@ -91,7 +92,8 @@ export const TransactionItem: React.FC<TransactionItemProps> = ({
         >
           {' '}
           {getLabelOrAddress(item.from)}{' '}
-          {new Date(item.timestamp).toLocaleDateString() === new Date().toLocaleDateString()
+          {new Date(item.timestamp).toLocaleDateString() ===
+          new Date().toLocaleDateString()
             ? `at ${new Date(item.timestamp).toLocaleTimeString('en-US', {
                 timeStyle: 'short',
               })}`

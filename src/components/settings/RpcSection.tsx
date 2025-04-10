@@ -42,7 +42,7 @@ export const RpcSection = () => {
           simulation to work
         </Text>
       </View>
-      <TouchableOpacity 
+      <TouchableOpacity
         style={styles.rpcItem}
         onPress={handleEditRpc}
         activeOpacity={0.7}
@@ -54,7 +54,12 @@ export const RpcSection = () => {
               {settings.customRpcUrl || 'Default RPC'}
             </Text>
           </View>
-          <MaterialIcons name="edit" size={16} color="#666" style={styles.editIcon} />
+          <MaterialIcons
+            name="edit"
+            size={16}
+            color="#666"
+            style={styles.editIcon}
+          />
         </View>
       </TouchableOpacity>
     </View>

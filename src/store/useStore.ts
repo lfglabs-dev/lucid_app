@@ -3,8 +3,8 @@ import { persist, createJSONStorage } from 'zustand/middleware'
 import AsyncStorage from '@react-native-async-storage/async-storage'
 import { Transaction, Settings } from '../types'
 import { fetchTransactions as fetchTransactionsFromApi } from '../services/api'
-import { QUICKNODE_RPC } from '../constants/api'
-import { forgeTransaction } from '../services/utils'
+import { RPC_URL } from '../constants/api'
+import { forgeTransaction, getRpcUrlByChainId } from '../services/utils'
 
 interface AddressLabel {
   address: string
@@ -25,6 +25,7 @@ interface AppState {
   addAddressLabel: (address: string, label: string) => void
   removeAddressLabel: (address: string) => void
   getAddressLabel: (address: string) => string | undefined
+  getRpcUrlByChainId: (chainId: string) => string
 }
 
 export const useStore = create<AppState>()(
@@ -50,7 +51,9 @@ export const useStore = create<AppState>()(
         set((state) => ({
           settings: {
             ...state.settings,
-            pairedDevices: state.settings.pairedDevices.filter((d) => d.id !== id),
+            pairedDevices: state.settings.pairedDevices.filter(
+              (d) => d.id !== id
+            ),
           },
         })),
 
@@ -105,7 +108,10 @@ export const useStore = create<AppState>()(
           })
 
           // Combine transactions with new ones at the top
-          const combinedTransactions = [...newTransactions, ...existingTransactions]
+          const combinedTransactions = [
+            ...newTransactions,
+            ...existingTransactions,
+          ]
 
           // Sort transactions by creation date in descending order (most recent first)
           const sortedTransactions = combinedTransactions.sort((a, b) => {
@@ -161,7 +167,12 @@ export const useStore = create<AppState>()(
 
       getActiveRpcUrl: () => {
         const { settings } = get()
-        return settings.customRpcUrl || QUICKNODE_RPC
+        return settings.customRpcUrl || RPC_URL
+      },
+
+      getRpcUrlByChainId: (chainId: string) => {
+        const { settings } = get()
+        return settings.customRpcUrl || getRpcUrlByChainId(chainId)
       },
 
       addAddressLabel: (address: string, label: string) =>

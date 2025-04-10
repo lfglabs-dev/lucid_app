@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react'
 import { View, Text, StyleSheet, Image, ActivityIndicator } from 'react-native'
 import { TokenInfoService } from '../services/tokenInfo'
-import { TokenInfo, SimulationData } from '../types'
+import { ChainInfo, SimulationData } from '../types'
 import { formatAmount } from '../services/utils'
 import { ContractInteractionSection } from './ContractInteractionSection'
 
@@ -10,18 +10,16 @@ interface SimulationViewProps {
 }
 
 export const SimulationView = ({ simulationData }: SimulationViewProps) => {
-  const [chainInfo, setChainInfo] = useState<TokenInfo | null>(null)
+  const [chainInfo, setChainInfo] = useState<ChainInfo | null>(null)
   const [isLoading, setIsLoading] = useState(true)
-  const tokenInfoService = TokenInfoService.getInstance()
+  const tokenInfoService = TokenInfoService.getInstance(simulationData.chainId)
 
   useEffect(() => {
     const loadMetadata = async () => {
       setIsLoading(true)
 
       try {
-        const chain = await tokenInfoService.getChainMetadata(
-          simulationData.chainId
-        )
+        const chain = await tokenInfoService.getChainMetadata()
         setChainInfo(chain)
       } catch (error) {
         console.error('Error loading metadata:', error)

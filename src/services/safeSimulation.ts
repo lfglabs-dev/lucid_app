@@ -3,6 +3,7 @@ import { TokenInfoService } from './tokenInfo'
 import { useStore } from '../store/useStore'
 import { SimulationResponse, SimulationData, Transaction } from '../types'
 import { BaseSimulation, SimulationError } from './baseSimulation'
+import { toHexAddress } from './utils'
 
 export class SafeSimulation extends BaseSimulation {
   private readonly DOMAIN_SEPARATOR_TYPEHASH =
@@ -12,8 +13,9 @@ export class SafeSimulation extends BaseSimulation {
   private readonly SAFE_TX_TYPEHASH =
     '0xbb8310d486368db6bd6f849402fdd73ad53d316b5a4b2644ad6efe0f941286d8'
   private readonly MULTICALL_SELECTOR = '0x8d80ff0a' // Function selector for multicall
-  private readonly SAFE_DELEGATE_CALL_ADDRESS =
-    '0x40a2accbd92bca938b02010e17a5b8929b49130d' // Safe delegate call contract
+  private readonly SAFE_DELEGATE_CALL_ADDRESS = toHexAddress(
+    '0x40a2accbd92bca938b02010e17a5b8929b49130d'
+  ) // Safe delegate call contract
   private readonly SAFE_ORIGINAL_BYTECODE_IMP =
     '0x608060405273ffffffffffffffffffffffffffffffffffffffff600054167fa619486e0000000000000000000000000000000000000000000000000000000060003514156050578060005260206000f35b3660008037600080366000845af43d6000803e60008114156070573d6000fd5b3d6000f3fea2646970667358221220d1429297349653a4918076d650332de1a1068c5f3e07c5c82360c277770b955264736f6c63430007060033'
   private readonly SAFE_PROXY_BYTECODE_IMP =
@@ -21,7 +23,9 @@ export class SafeSimulation extends BaseSimulation {
 
   constructor(
     transaction: Transaction,
-    tokenInfoService: TokenInfoService = TokenInfoService.getInstance()
+    tokenInfoService: TokenInfoService = TokenInfoService.getInstance(
+      transaction.chainId
+    )
   ) {
     super(transaction, tokenInfoService)
   }
@@ -118,13 +122,13 @@ export class SafeSimulation extends BaseSimulation {
   }
 
   protected override async ethSimulateTxs(): Promise<SimulationResponse> {
-    const rpcUrl = useStore.getState().getActiveRpcUrl()
+    const chainId = this.chainId || '0x1' // Default to Ethereum mainnet if not specified
+    const rpcUrl = useStore.getState().getRpcUrlByChainId(chainId)
 
     // Check if this is a multicall and format data accordingly
     let formattedData = this.data
     let stateOverrides = {}
     let contractCalled = this.to
-
     if (this.isMulticall()) {
       contractCalled = this.from
       formattedData = this.formatDelegateCallData()
@@ -138,6 +142,16 @@ export class SafeSimulation extends BaseSimulation {
           code: this.SAFE_ORIGINAL_BYTECODE_IMP,
         },
       }
+    }
+
+    const callContent = {
+      from: this.from,
+      to: contractCalled, // If it's a multicall, we need to use the self Safe contract address
+      data: formattedData,
+      value: this.value,
+      gas: this.gas,
+      maxFeePerGas: this.maxFeePerGas,
+      maxPriorityFeePerGas: this.maxPriorityFeePerGas,
     }
 
     const simulationRequest = {
@@ -185,7 +199,7 @@ export class SafeSimulation extends BaseSimulation {
     const result: SimulationResponse = await response.json()
 
     if (result.error) {
-      throw SimulationError.fromResponse(result.error)
+      throw SimulationError.fromResponse({ ...result.error, callContent })
     }
 
     if (!result.result?.[0]?.calls?.[0]) {
@@ -195,7 +209,7 @@ export class SafeSimulation extends BaseSimulation {
     const call = result.result[0].calls[0]
 
     if (call.error) {
-      throw SimulationError.fromResponse(call.error)
+      throw SimulationError.fromResponse({ ...call.error, callContent })
     }
 
     return result

@@ -8,6 +8,13 @@ export interface TokenInfo {
   warning?: string // Optional warning message for unknown or unverified tokens
 }
 
+export interface ChainInfo {
+  chainId: string
+  name: string
+  currency: TokenInfo
+  icon: string
+}
+
 export type RequestType = 'eip712' | 'eoa_transaction'
 
 export interface Transaction {

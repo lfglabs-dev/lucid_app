@@ -27,7 +27,7 @@ export const ENSAddress = ({ address, chainId, style }: ENSAddressProps) => {
         }
 
         // Get the active RPC URL from the store
-        const rpcUrl = useStore.getState().getActiveRpcUrl()
+        const rpcUrl = useStore.getState().getRpcUrlByChainId(chainId)
         const provider = new ethers.JsonRpcProvider(rpcUrl)
         const ensName = await provider.lookupAddress(address)
 

@@ -6,7 +6,9 @@ import { ethers } from 'ethers'
 export class EoaSimulation extends BaseSimulation {
   constructor(
     transaction: Transaction,
-    tokenInfoService: TokenInfoService = TokenInfoService.getInstance()
+    tokenInfoService: TokenInfoService = TokenInfoService.getInstance(
+      transaction.chainId
+    )
   ) {
     super(transaction, tokenInfoService)
   }

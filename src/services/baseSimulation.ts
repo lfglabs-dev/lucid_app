@@ -96,7 +96,9 @@ export abstract class BaseSimulation {
 
   constructor(
     transaction: Transaction,
-    protected tokenInfoService: TokenInfoService = TokenInfoService.getInstance()
+    protected tokenInfoService: TokenInfoService = TokenInfoService.getInstance(
+      transaction.chainId
+    )
   ) {
     this.from = transaction.from
     this.to = transaction.to
@@ -111,7 +113,8 @@ export abstract class BaseSimulation {
   }
 
   protected async ethSimulateTxs(): Promise<SimulationResponse> {
-    const rpcUrl = useStore.getState().getActiveRpcUrl()
+    const chainId = this.chainId || '0x1' // Default to Ethereum mainnet if not specified
+    const rpcUrl = useStore.getState().getRpcUrlByChainId(chainId)
 
     const callContent = {
       from: this.from,
@@ -223,10 +226,9 @@ export abstract class BaseSimulation {
       const allChanges: AssetChanges[] = []
 
       for (const [tokenAddress, events] of Object.entries(eventsByToken)) {
-        const token = await this.tokenInfoService.getTokenMetadata(
-          chainId,
-          tokenAddress
-        )
+        // Update the TokenInfoService chainId before getting token metadata
+        this.tokenInfoService.setChainId(chainId)
+        const token = await this.tokenInfoService.getTokenMetadata(tokenAddress)
         if (!token) {
           console.error('Token metadata not found for:', tokenAddress)
           continue

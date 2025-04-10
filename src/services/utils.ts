@@ -1,6 +1,7 @@
 import { WordArray } from 'crypto-es/lib/core'
 import { ethers } from 'ethers'
 import { EIP712SafeTx, EoaTx, Transaction } from '../types'
+import { CHAINS } from '../constants/api'
 
 export const formatAddress = (address: string) => {
   if (address === 'yourself') {
@@ -127,4 +128,73 @@ export const forgeTransaction = (
     ),
     nonce: toHexNumber(tx.nonce),
   }
+}
+
+// Chain ID to chain name mapping
+export const CHAIN_ID_TO_NAME: Record<string, string> = {
+  '0x1': 'ethereum',
+  '0x89': 'polygon-pos',
+  '0xa': 'optimism',
+  '0xa4b1': 'arbitrum',
+  '0x64': 'gnosis',
+  '0x38': 'binance-smart-chain',
+  '0xa86a': 'avalanche',
+  '0x144': 'zksync',
+  '0x1388': 'mantle',
+  '0x138de': 'berachain',
+  '0x2105': 'base',
+  '0xe708': 'linea',
+  '0x76ad': 'zora',
+  '0x82750': 'scroll',
+  '0x1e0': 'world-chain',
+  '0x13e31': 'blast',
+}
+
+// Chain ID to native token symbol mapping
+export const CHAIN_ID_TO_SYMBOL: Record<string, string> = {
+  '0x1': 'ETH',
+  '0x89': 'MATIC',
+  '0xa': 'ETH',
+  '0xa4b1': 'ETH',
+  '0x64': 'XDAI',
+  '0x38': 'BNB',
+  '0xa86a': 'AVAX',
+  '0x144': 'ETH',
+  '0x1388': 'MNT',
+  '0x138de': 'BERA',
+  '0x2105': 'ETH',
+  '0xe708': 'ETH',
+  '0x76ad': 'ETH',
+  '0x82750': 'ETH',
+  '0x1e0': 'WLD',
+  '0x13e31': 'ETH',
+}
+
+// Get RPC URL by chain ID
+export const getRpcUrlByChainId = (chainId: string): string => {
+  const chainName = CHAIN_ID_TO_NAME[chainId]
+  if (chainName && CHAINS[chainName]) {
+    return CHAINS[chainName]
+  }
+  // Default to Ethereum if chain ID is not recognized
+  return CHAINS['ethereum']
+}
+
+// Get native token symbol by chain ID
+export const getSymbolByChainId = (chainId: string): string => {
+  return CHAIN_ID_TO_SYMBOL[chainId] || 'ETH' // Default to ETH if chain ID is not recognized
+}
+
+// Get Icon by chain ID
+export const getIconByChainId = (chainId: string): string => {
+  return `https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/${CHAIN_ID_TO_NAME[chainId]}/info/logo.png`
+}
+
+// Get gas currency icon by chain ID
+export const getGasCurrencyIcon = (chainId: string): string => {
+  if (getSymbolByChainId(chainId) === 'ETH') {
+    return 'https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/ethereum/info/logo.png'
+  }
+
+  return `https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/${CHAIN_ID_TO_NAME[chainId]}/info/logo.png`
 }

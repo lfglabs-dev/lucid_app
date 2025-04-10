@@ -15,19 +15,19 @@ export const EoaHwSimulation: React.FC<EoaHwSimulationProps> = ({
     <>
       <View style={styles.header}>
         <Text style={styles.title}>
-          Verify Transaction Hash on Hardware Wallet
+          Verify data on your Hardware Wallet
         </Text>
         <Text style={styles.subtitle}>
-          Verify the first and last 4 characters on your hardware wallet hashes
+          Verify the first and last 4 characters on your hardware wallet hashes of the `to` address
         </Text>
       </View>
       <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Transaction Hash</Text>
+        {/* <Text style={styles.sectionTitle}>Transaction Hash</Text>
         <View style={styles.hashContainer}>
           <Text style={styles.hashHighlightMessageHash}>
             {formatAddress(transactionHash)}
           </Text>
-        </View>
+        </View> */}
         <Text style={styles.sectionTitle}>To Address</Text>
         <View style={styles.hashContainer}>
           <Text style={styles.hashHighlightDomainHash}>

@@ -1,7 +1,7 @@
 import { Platform } from 'react-native'
 import * as Device from 'expo-device'
 import { API_BASE_URL } from '../constants/api'
-import { storeAuthToken, getAuthToken, removeAuthToken, removeDecryptionKey } from './secureStorage'
+import { storeAuthToken, getAuthToken } from './secureStorage'
 
 const ONE_DAY_MS = 24 * 60 * 60 * 1000
 

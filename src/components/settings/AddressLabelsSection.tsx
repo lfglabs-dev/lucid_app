@@ -45,13 +45,19 @@ export const AddressLabelsSection = () => {
     )
   }
 
-  const renderItem = ({ item, index }: { item: { address: string; label: string }, index: number }) => {
+  const renderItem = ({
+    item,
+    index,
+  }: {
+    item: { address: string; label: string }
+    index: number
+  }) => {
     const isSafe = item.address.toLowerCase().includes('safe')
     const defaultLabel = `${isSafe ? 'Safe' : 'EOA'} ${index + 1}`
     const displayLabel = item.label || defaultLabel
 
     return (
-      <TouchableOpacity 
+      <TouchableOpacity
         style={styles.walletItem}
         onPress={() => handleEditLabel(item.address, item.label)}
         activeOpacity={0.7}
@@ -59,11 +65,7 @@ export const AddressLabelsSection = () => {
         <View style={styles.walletContent}>
           {isSafe ? (
             <View style={styles.iconContainer}>
-              <SvgXml
-                xml={safeLogoXml}
-                width={24}
-                height={24}
-              />
+              <SvgXml xml={safeLogoXml} width={24} height={24} />
             </View>
           ) : (
             <View style={styles.iconContainer}>
@@ -72,9 +74,16 @@ export const AddressLabelsSection = () => {
           )}
           <View style={styles.walletInfo}>
             <Text style={styles.walletLabel}>{displayLabel}</Text>
-            <Text style={styles.walletAddress}>{formatAddress(item.address)}</Text>
+            <Text style={styles.walletAddress}>
+              {formatAddress(item.address)}
+            </Text>
           </View>
-          <MaterialIcons name="edit" size={16} color="#666" style={styles.editIcon} />
+          <MaterialIcons
+            name="edit"
+            size={16}
+            color="#666"
+            style={styles.editIcon}
+          />
         </View>
       </TouchableOpacity>
     )
@@ -83,7 +92,7 @@ export const AddressLabelsSection = () => {
   return (
     <View style={styles.container}>
       <Text style={styles.title}>Your Wallets</Text>
-      
+
       {addressLabels.length === 0 ? (
         <Text style={styles.emptyText}>No wallets added yet</Text>
       ) : (
