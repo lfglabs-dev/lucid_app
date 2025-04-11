@@ -7,17 +7,25 @@ import { TransactionItem } from '../components/TransactionItem'
 import { LoadingState } from '../components/LoadingState'
 import { ErrorState } from '../components/ErrorState'
 import { EmptyState } from '../components/EmptyState'
+import { isDeviceLinked } from '../services/secureStorage'
 
 export const TransactionsScreen = () => {
   const { transactions, fetchTransactions } = useStore()
+  const [isLinkedToLaptop, setIsLinkedToLaptop] = React.useState(false)
   const [isLoading, setIsLoading] = React.useState(true)
   const [error, setError] = React.useState<string | null>(null)
   const [refreshing, setRefreshing] = React.useState(false)
+
+  const checkDeviceLinkStatus = async () => {
+    const linked = await isDeviceLinked()
+    setIsLinkedToLaptop(linked)
+  }
 
   const loadPastTransactions = async () => {
     setIsLoading(true)
     setError(null)
     try {
+      await checkDeviceLinkStatus()
       const token = await getOrRefreshAuth()
       if (!token) {
         setError('No device paired. Please pair a device first.')
@@ -56,8 +64,14 @@ export const TransactionsScreen = () => {
     return <ErrorState message={error} />
   }
 
-  if (transactions.length === 0) {
-    return <EmptyState refreshing={refreshing} onRefresh={onRefresh} />
+  if (transactions.length === 0 || !isLinkedToLaptop) {
+    return (
+      <EmptyState
+        refreshing={refreshing}
+        onRefresh={onRefresh}
+        isLinkedToLaptop={isLinkedToLaptop}
+      />
+    )
   }
 
   return (

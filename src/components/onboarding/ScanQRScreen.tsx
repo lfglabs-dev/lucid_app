@@ -1,36 +1,46 @@
 import React, { useState, useRef } from 'react'
-import {
-  View,
-  Text,
-  StyleSheet,
-  TouchableOpacity,
-  Alert,
-  Dimensions,
-} from 'react-native'
+import { View, Text, StyleSheet, TouchableOpacity, Alert } from 'react-native'
 import { CameraView, useCameraPermissions } from 'expo-camera'
-import { getCurrentAuthToken } from '../services/auth'
-import { API_BASE_URL } from '../constants/api'
-import { SuccessView } from '../components/SuccessView'
 import { useIsFocused } from '@react-navigation/native'
-import { storeDecryptionKey } from '../services/secureStorage'
+import { getCurrentAuthToken } from '../../services/auth'
+import { API_BASE_URL } from '../../constants/api'
+import { storeDecryptionKey } from '../../services/secureStorage'
 
-export const LinkDeviceScreen = () => {
+interface ScanQRScreenProps {
+  onMainAction: () => void
+  onSecondaryAction?: () => void
+}
+
+export const ScanQRScreen = ({
+  onMainAction,
+  onSecondaryAction,
+}: ScanQRScreenProps) => {
   const [permission, requestPermission] = useCameraPermissions()
   const [isProcessing, setIsProcessing] = useState(false)
-  const [showSuccess, setShowSuccess] = useState(false)
-  const [deviceName, setDeviceName] = useState('')
   const isFocused = useIsFocused()
-  // Ref for immediate checks
   const processingRef = useRef(false)
 
   const approveLink = async (linkToken: string) => {
     try {
-      // Get the current auth token
+      console.log(
+        '[ScanQR] Starting approveLink with token:',
+        linkToken.substring(0, 10) + '...'
+      )
+
       const authToken = await getCurrentAuthToken()
       if (!authToken) {
+        console.error('[ScanQR] No auth token available')
         throw new Error('No auth token available')
       }
+      console.log(
+        '[ScanQR] Got auth token:',
+        authToken.substring(0, 10) + '...'
+      )
 
+      console.log(
+        '[ScanQR] Making API request to:',
+        `${API_BASE_URL}/approve_link`
+      )
       const response = await fetch(`${API_BASE_URL}/approve_link`, {
         method: 'POST',
         headers: {
@@ -41,11 +51,11 @@ export const LinkDeviceScreen = () => {
       })
 
       if (!response.ok) {
-        const errorData = await response.text()
-        console.error('[LinkDevice] API Error response:', {
+        const errorText = await response.text()
+        console.error('[ScanQR] API Error:', {
           status: response.status,
           statusText: response.statusText,
-          body: errorData,
+          body: errorText,
         })
         throw new Error(
           `Failed to link token: ${response.status} ${response.statusText}`
@@ -53,20 +63,10 @@ export const LinkDeviceScreen = () => {
       }
 
       const responseData = await response.json()
-      console.log('[LinkDevice] Link approved successfully:', responseData)
+      console.log('[ScanQR] Link approved successfully:', responseData)
       return true
     } catch (error) {
-      if (
-        error instanceof TypeError &&
-        error.message === 'Network request failed'
-      ) {
-        console.error(
-          '[LinkDevice] Network error - Is the server running at',
-          API_BASE_URL,
-          '?'
-        )
-      }
-      console.error('[LinkDevice] Error linking token:', {
+      console.error('[ScanQR] Error in approveLink:', {
         error,
         message: error instanceof Error ? error.message : 'Unknown error',
         stack: error instanceof Error ? error.stack : undefined,
@@ -76,70 +76,80 @@ export const LinkDeviceScreen = () => {
   }
 
   const handleBarCodeScanned = async ({ data }: { data: string }) => {
-    // Don't process if already processing
     if (processingRef.current) {
-      console.log('[LinkDevice] Ignoring scan - already processing')
+      console.log('[ScanQR] Ignoring scan - already processing')
       return
     }
+
     processingRef.current = true
     setIsProcessing(true)
+    console.log('[ScanQR] Starting QR code processing')
 
     try {
+      console.log(
+        '[ScanQR] Attempting to parse QR data:',
+        data.substring(0, 50) + '...'
+      )
       const qrData = JSON.parse(data)
-      console.log('[LinkDevice] QR data:', qrData)
+      console.log('[ScanQR] Parsed QR data:', {
+        hasApp: !!qrData.app,
+        hasToken: !!qrData.token,
+        hasDecryptionKey: !!qrData.decryptionKey,
+      })
 
-      // Validate required fields
       if (!qrData.app || !qrData.token) {
-        console.error('[LinkDevice] Missing required fields:', {
+        console.error('[ScanQR] Missing required fields:', {
           hasApp: !!qrData.app,
           hasToken: !!qrData.token,
         })
         throw new Error('Invalid QR code format')
       }
 
-      // Extract the actual token (remove 'token-' prefix)
       const linkToken = qrData.token.replace('token-', '')
+      console.log(
+        '[ScanQR] Extracted link token:',
+        linkToken.substring(0, 10) + '...'
+      )
 
       if (!linkToken) {
-        console.error('[LinkDevice] Token is empty after prefix removal')
+        console.error('[ScanQR] Token is empty after prefix removal')
         throw new Error('Invalid token format')
       }
 
-      // Link the token with the API
+      console.log('[ScanQR] Attempting to link token with API')
       const isLinked = await approveLink(linkToken)
 
       if (!isLinked) {
-        console.error('[LinkDevice] API linking failed')
+        console.error('[ScanQR] API linking failed')
         throw new Error('Failed to link token with server')
       }
 
-      // Store the decryption key if provided
       if (qrData.decryptionKey) {
         try {
-          // Extract just the key material (k property) from the JWK object
+          console.log('[ScanQR] Attempting to store decryption key')
           const keyMaterial = qrData.decryptionKey.k
           if (!keyMaterial) {
-            console.error(
-              '[LinkDevice] No key material found in decryption key'
-            )
+            console.error('[ScanQR] No key material found in decryption key')
             throw new Error('Invalid decryption key format')
           }
           await storeDecryptionKey(String(keyMaterial))
+          console.log('[ScanQR] Successfully stored decryption key')
         } catch (error) {
-          console.error('[LinkDevice] Error storing decryption key:', error)
-          // Continue with the linking process even if storing the key fails
+          console.error('[ScanQR] Error storing decryption key:', error)
         }
       }
 
-      // Set device name and show success view
-      setDeviceName(qrData.name || 'Chrome Extension')
-      setShowSuccess(true)
-
-      // Reset states only after successful linking
+      console.log('[ScanQR] Successfully completed QR processing')
       setIsProcessing(false)
       processingRef.current = false
+      onMainAction()
     } catch (error) {
-      console.error('[LinkDevice] Error processing QR code:', error)
+      console.error('[ScanQR] Error processing QR code:', {
+        error,
+        message: error instanceof Error ? error.message : 'Unknown error',
+        stack: error instanceof Error ? error.stack : undefined,
+      })
+
       Alert.alert('Error', 'Failed to process QR code. Please try again.', [
         {
           text: 'OK',
@@ -150,16 +160,6 @@ export const LinkDeviceScreen = () => {
         },
       ])
     }
-  }
-
-  if (showSuccess) {
-    return (
-      <SuccessView
-        title="Device Connected!"
-        description={deviceName}
-        navigateToTab="Transactions"
-      />
-    )
   }
 
   if (!permission) {
@@ -178,13 +178,11 @@ export const LinkDeviceScreen = () => {
         <Text style={styles.permissionText}>
           Camera permission is required to scan QR codes
         </Text>
-        <TouchableOpacity
-          style={styles.permissionButton}
-          onPress={requestPermission}
-        >
-          <Text style={styles.permissionButtonText}>
-            Grant Camera Permission
-          </Text>
+        <TouchableOpacity style={styles.button} onPress={requestPermission}>
+          <Text style={styles.buttonText}>Grant Camera Permission</Text>
+        </TouchableOpacity>
+        <TouchableOpacity style={styles.linkButton} onPress={onSecondaryAction}>
+          <Text style={styles.linkText}>Skip for now</Text>
         </TouchableOpacity>
       </View>
     )
@@ -214,11 +212,12 @@ export const LinkDeviceScreen = () => {
       </View>
 
       <View style={styles.instructionsContainer}>
-        <Text style={styles.instructionsTitle}>Link Your Laptop Wallets</Text>
-        <Text style={styles.instructionsText}>
-          1. Install the Lucid Chrome extension in the Chrome Web Store{'\n'}
-          2. Scan the QR code displayed when you open it
+        <Text style={styles.instructionsTitle}>
+          Open the Lucid Extension on your laptop and scan the QR code
         </Text>
+        <TouchableOpacity style={styles.linkButton} onPress={onSecondaryAction}>
+          <Text style={styles.linkText}>Skip for now</Text>
+        </TouchableOpacity>
       </View>
     </View>
   )
@@ -290,80 +289,36 @@ const styles = StyleSheet.create({
     borderLeftWidth: 0,
     borderBottomRightRadius: 12,
   },
-  infoButton: {
-    position: 'absolute',
-    top: 50,
-    right: 20,
-    padding: 8,
-  },
-  modalContainer: {
-    flex: 1,
-    justifyContent: 'flex-end',
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-  },
-  modalContent: {
-    backgroundColor: '#fff',
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
-    padding: 20,
-    paddingBottom: 40,
-  },
-  modalHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 10,
-  },
-  closeButton: {
-    padding: 5,
-  },
-  title: {
-    fontSize: 24,
-    fontWeight: 'bold',
-  },
-  description: {
-    fontSize: 16,
-    lineHeight: 24,
-    color: '#333',
-  },
   permissionText: {
     fontSize: 16,
+    color: '#fff',
     textAlign: 'center',
     marginBottom: 20,
     padding: 20,
   },
-  permissionButton: {
+  button: {
     backgroundColor: '#007AFF',
     padding: 16,
     borderRadius: 8,
     alignItems: 'center',
     marginHorizontal: 20,
+    marginBottom: 10,
   },
-  permissionButtonText: {
+  buttonText: {
     color: '#fff',
     fontSize: 16,
     fontWeight: '600',
   },
-  scanAgainButton: {
-    position: 'absolute',
-    top: 20,
-    left: 20,
-    right: 20,
-    backgroundColor: '#007AFF',
-    padding: 16,
-    borderRadius: 8,
+  linkButton: {
+    marginTop: 10,
+    marginBottom: 35,
     alignItems: 'center',
   },
-  scanAgainButtonText: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: '600',
+  linkText: {
+    color: 'grey',
+    fontSize: 15,
   },
   instructionsContainer: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
     backgroundColor: '#fff',
     padding: 20,
     paddingBottom: 40,
@@ -372,7 +327,7 @@ const styles = StyleSheet.create({
   },
   instructionsTitle: {
     color: '#000',
-    fontSize: 18,
+    fontSize: 20,
     fontWeight: 'bold',
     marginBottom: 8,
     textAlign: 'center',
@@ -381,14 +336,5 @@ const styles = StyleSheet.create({
     color: '#333',
     fontSize: 14,
     lineHeight: 20,
-  },
-  processingOverlay: {
-    backgroundColor: '#000',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  processingText: {
-    color: '#fff',
-    fontSize: 18,
   },
 })

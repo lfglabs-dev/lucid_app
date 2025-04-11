@@ -57,3 +57,27 @@ export async function removeAuthToken(): Promise<void> {
     throw error
   }
 }
+
+export async function clearSecureStorage(): Promise<void> {
+  try {
+    console.log('Clearing all secure storage data')
+    await removeDecryptionKey()
+    await removeAuthToken()
+
+    // Add any other secure storage items to clear here
+    console.log('All secure storage data cleared successfully')
+  } catch (error) {
+    console.error('Error clearing secure storage:', error)
+    throw error
+  }
+}
+
+export async function isDeviceLinked(): Promise<boolean> {
+  try {
+    const decryptionKey = await getDecryptionKey()
+    return typeof decryptionKey === 'string' && decryptionKey.length > 1
+  } catch (error) {
+    console.error('Error checking if device is linked:', error)
+    return false
+  }
+}

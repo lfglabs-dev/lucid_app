@@ -75,6 +75,10 @@ export interface Settings {
   customRpcUrl: string | null
 }
 
+export interface OnboardingState {
+  hasCompletedOnboarding: boolean
+}
+
 // Types
 export interface EthereumLog {
   address: string

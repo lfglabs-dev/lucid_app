@@ -1,7 +1,7 @@
 import { create } from 'zustand'
 import { persist, createJSONStorage } from 'zustand/middleware'
 import AsyncStorage from '@react-native-async-storage/async-storage'
-import { Transaction, Settings } from '../types'
+import { Transaction, Settings, OnboardingState } from '../types'
 import { fetchTransactions as fetchTransactionsFromApi } from '../services/api'
 import { RPC_URL } from '../constants/api'
 import { forgeTransaction, getRpcUrlByChainId } from '../services/utils'
@@ -14,6 +14,7 @@ interface AddressLabel {
 interface AppState {
   transactions: Transaction[]
   settings: Settings
+  onboarding: OnboardingState
   addressLabels: AddressLabel[]
   toggleLedgerHashCheck: () => void
   removePairedDevice: (id: string) => void
@@ -26,6 +27,7 @@ interface AppState {
   removeAddressLabel: (address: string) => void
   getAddressLabel: (address: string) => string | undefined
   getRpcUrlByChainId: (chainId: string) => string
+  setHasCompletedOnboarding: (completed: boolean) => void
 }
 
 export const useStore = create<AppState>()(
@@ -36,6 +38,9 @@ export const useStore = create<AppState>()(
         ledgerHashCheckEnabled: true,
         pairedDevices: [],
         customRpcUrl: null,
+      },
+      onboarding: {
+        hasCompletedOnboarding: false,
       },
       addressLabels: [],
 
@@ -209,6 +214,14 @@ export const useStore = create<AppState>()(
         )
         return labelItem?.label
       },
+
+      setHasCompletedOnboarding: (completed: boolean) =>
+        set((state) => ({
+          onboarding: {
+            ...state.onboarding,
+            hasCompletedOnboarding: completed,
+          },
+        })),
     }),
     {
       name: 'lucid-app-permanent-storage',
@@ -217,6 +230,7 @@ export const useStore = create<AppState>()(
         // Only persist these parts of the state
         settings: state.settings,
         addressLabels: state.addressLabels,
+        onboarding: state.onboarding,
       }),
     }
   )

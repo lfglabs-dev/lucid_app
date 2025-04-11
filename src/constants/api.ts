@@ -37,3 +37,9 @@ export const CHAINS: Record<string, string> = {
   avalanche:
     'https://avax-mainnet.g.alchemy.com/v2/KmwG40UUX-Ih0ngWRLqV8nebiDIpcstE',
 }
+
+// Chrome extension URL and sharing message
+export const CHROME_EXTENSION_URL =
+  'https://chrome.google.com/webstore/detail/lucid/your-extension-id' // TODO: Add the actual URL
+export const SHARE_MESSAGE =
+  'Hey Myself ! Remember to install the Lucid Chrome Extension to make your wallet safe again.'

@@ -93,8 +93,15 @@ export const toHexBytes = (value: string | undefined | null): string => {
 
 // Format Ethereum addresses or other hex values
 export const toHexAddress = (value: string | undefined | null): string => {
-  if (!value) throw new Error('Invalid address')
-  return ethers.getAddress(value.toLowerCase())
+  if (!value) return '0x0000000000000000000000000000000000000000' // Return zero address instead of throwing
+
+  try {
+    return ethers.getAddress(value.toLowerCase())
+  } catch (error) {
+    console.warn(`Invalid Ethereum address: ${value}`, error)
+    // Return a default address or the original value with 0x prefix
+    return value.startsWith('0x') ? value : `0x${value}`
+  }
 }
 
 // ------------ 🚀 Forge Transaction ------------
@@ -109,6 +116,30 @@ export const forgeTransaction = (
 ): Transaction => {
   const isSafeTx = 'safeAddress' in tx
 
+  // Safely extract addresses with fallbacks
+  let fromAddress = '0x0000000000000000000000000000000000000000'
+  let toAddress = '0x0000000000000000000000000000000000000000'
+
+  try {
+    fromAddress = isSafeTx
+      ? toHexAddress(tx.safeAddress)
+      : toHexAddress(tx.from)
+  } catch (error) {
+    console.warn(
+      `Error processing 'from' address for transaction ${requestId}:`,
+      error
+    )
+  }
+
+  try {
+    toAddress = toHexAddress(tx.to)
+  } catch (error) {
+    console.warn(
+      `Error processing 'to' address for transaction ${requestId}:`,
+      error
+    )
+  }
+
   return {
     id: requestId,
     status: 'pending',
@@ -116,8 +147,8 @@ export const forgeTransaction = (
     timestamp: new Date(creationDate).getTime(),
 
     chainId: toHexNumber(tx.chainId),
-    from: isSafeTx ? toHexAddress(tx.safeAddress) : toHexAddress(tx.from),
-    to: toHexAddress(tx.to),
+    from: fromAddress,
+    to: toAddress,
     value: toHexNumber(tx.value),
     data: toHexBytes(tx.data),
 

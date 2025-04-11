@@ -8,17 +8,16 @@ interface EoaHwSimulationProps {
 }
 
 export const EoaHwSimulation: React.FC<EoaHwSimulationProps> = ({
-  transactionHash,
+  transactionHash, // To re-add later when we'll be able to make it work
   to,
 }) => {
   return (
     <>
       <View style={styles.header}>
-        <Text style={styles.title}>
-          Verify data on your Hardware Wallet
-        </Text>
+        <Text style={styles.title}>Verify data on your Hardware Wallet</Text>
         <Text style={styles.subtitle}>
-          Verify the first and last 4 characters on your hardware wallet hashes of the `to` address
+          Verify the first and last 4 characters on your hardware wallet hashes
+          of the `to` address
         </Text>
       </View>
       <View style={styles.section}>
