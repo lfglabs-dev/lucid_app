@@ -72,10 +72,12 @@ export const SimulationView = ({ simulationData }: SimulationViewProps) => {
                     : '+'
                   : 'Approve '}
                 {formatAmount(change.amount)} {change.assetSymbol}{' '}
-                {change?.warning ? '⚠️' : ''}
               </Text>
               {change?.warning ? (
-                <Text style={styles.warning}>{change.warning}</Text>
+                <Text style={styles.warning}>
+                  <Text style={styles.warning}>⚠️&nbsp;</Text>
+                  {change.warning}
+                </Text>
               ) : (
                 <Image
                   source={{ uri: change.assetIcon }}
@@ -140,6 +142,11 @@ const styles = StyleSheet.create({
   changeAmount: {
     fontSize: 25,
     fontWeight: 'bold',
+    gap: 8,
+    display: 'flex',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   changeIcon: {
     width: 28,

@@ -12,6 +12,7 @@ import { SafeSimulation } from '../services/safeSimulation'
 import { EoaSimulation } from '../services/eoaSimulation'
 import { SimulationError } from '../services/baseSimulation'
 import { SimulationData } from '../types'
+import { usePostHog } from 'posthog-react-native'
 
 type NavigationProp = NativeStackNavigationProp<TransactionStackParamList>
 
@@ -42,6 +43,7 @@ export const TransactionSimulation = () => {
   const [messageHash, setMessageHash] = useState<string>('0x0')
   const [transactionHash, setTransactionHash] = useState<string>('0x0')
   const { ledgerHashCheckEnabled } = useStore((state) => state.settings)
+  const posthog = usePostHog()
 
   useEffect(() => {
     const txSimulation =
@@ -75,6 +77,13 @@ export const TransactionSimulation = () => {
 
         const result = await txSimulation.simulateTransaction()
         setSimulationData(result)
+
+        // Track successful simulation
+        posthog?.capture('transaction_simulation', {
+          wallet_type: transaction.requestType === 'eip712' ? 'Safe' : 'EOA',
+          chain_id: transaction.chainId,
+          status: 'success',
+        })
       } catch (err) {
         if (err instanceof SimulationError) {
           setError({
@@ -82,9 +91,48 @@ export const TransactionSimulation = () => {
             code: err.code,
             data: err.callContent,
           })
+
+          // Track simulation error
+          console.log('supposed to be here')
+          posthog?.capture('transaction_simulation_error', {
+            wallet_type: transaction.requestType === 'eip712' ? 'Safe' : 'EOA',
+            chain_id: transaction.chainId,
+            error_type: 'simulation_error',
+            error_code: err.code,
+            error_message: err.message,
+            error_data: err.callContent,
+            transaction_data: {
+              from: transaction.from,
+              to: transaction.to,
+              data: transaction.data,
+              value: transaction.value,
+              gas: transaction.gas,
+              maxFeePerGas: transaction.maxFeePerGas,
+              maxPriorityFeePerGas: transaction.maxPriorityFeePerGas,
+              nonce: transaction.nonce,
+            },
+          })
         } else {
           setError({
             message: 'Failed to simulate transaction',
+          })
+
+          // Track general error
+          posthog?.capture('transaction_simulation_error', {
+            wallet_type: transaction.requestType === 'eip712' ? 'Safe' : 'EOA',
+            chain_id: transaction.chainId,
+            error_type: 'general_error',
+            error_message: 'Failed to simulate transaction',
+            transaction_data: {
+              from: transaction.from,
+              to: transaction.to,
+              data: transaction.data,
+              value: transaction.value,
+              gas: transaction.gas,
+              maxFeePerGas: transaction.maxFeePerGas,
+              maxPriorityFeePerGas: transaction.maxPriorityFeePerGas,
+              nonce: transaction.nonce,
+            },
           })
         }
       } finally {

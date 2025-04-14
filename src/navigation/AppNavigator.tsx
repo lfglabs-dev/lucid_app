@@ -10,6 +10,7 @@ import { FirstTimeOnboardingFlow } from '../screens/FirstTimeOnboardingFlow'
 import { Ionicons } from '@expo/vector-icons'
 import { Transaction } from '../types'
 import { useStore } from '../store/useStore'
+import { PostHogProvider } from 'posthog-react-native'
 
 export type RootTabParamList = {
   Transactions: undefined
@@ -64,56 +65,63 @@ export const AppNavigator = () => {
 
   return (
     <NavigationContainer>
-      {!hasCompletedOnboarding ? (
-        <FirstTimeOnboardingFlow />
-      ) : (
-        <Tab.Navigator
-          initialRouteName="Transactions"
-          screenOptions={({ route }) => ({
-            tabBarIcon: ({ focused, color, size }) => {
-              let iconName
+      <PostHogProvider
+        apiKey="phc_fOuJga1RZroxiLWMOQtWsMshfAOwnIyyr8eREwwxzYm"
+        options={{
+          host: 'https://us.i.posthog.com',
+        }}
+      >
+        {!hasCompletedOnboarding ? (
+          <FirstTimeOnboardingFlow />
+        ) : (
+          <Tab.Navigator
+            initialRouteName="Transactions"
+            screenOptions={({ route }) => ({
+              tabBarIcon: ({ focused, color, size }) => {
+                let iconName
 
-              if (route.name === 'Transactions') {
-                iconName = focused ? 'list' : 'list-outline'
-              } else if (route.name === 'Link') {
-                iconName = focused ? 'scan' : 'scan-outline'
-              } else if (route.name === 'Settings') {
-                iconName = focused ? 'settings' : 'settings-outline'
-              }
+                if (route.name === 'Transactions') {
+                  iconName = focused ? 'list' : 'list-outline'
+                } else if (route.name === 'Link') {
+                  iconName = focused ? 'scan' : 'scan-outline'
+                } else if (route.name === 'Settings') {
+                  iconName = focused ? 'settings' : 'settings-outline'
+                }
 
-              return (
-                <Ionicons name={iconName as any} size={size} color={color} />
-              )
-            },
-            tabBarActiveTintColor: '#007AFF',
-            tabBarInactiveTintColor: 'gray',
-            headerStyle: {
-              backgroundColor: '#fff',
-            },
-            headerTintColor: '#000',
-            headerTitleStyle: {
-              fontWeight: 'bold',
-            },
-            unmountOnBlur: true,
-          })}
-        >
-          <Tab.Screen
-            name="Link"
-            component={LinkNavigator}
-            options={{
-              headerShown: false,
-            }}
-          />
-          <Tab.Screen
-            name="Transactions"
-            component={TransactionNavigator}
-            options={{
-              headerShown: false,
-            }}
-          />
-          <Tab.Screen name="Settings" component={SettingsScreen} />
-        </Tab.Navigator>
-      )}
+                return (
+                  <Ionicons name={iconName as any} size={size} color={color} />
+                )
+              },
+              tabBarActiveTintColor: '#007AFF',
+              tabBarInactiveTintColor: 'gray',
+              headerStyle: {
+                backgroundColor: '#fff',
+              },
+              headerTintColor: '#000',
+              headerTitleStyle: {
+                fontWeight: 'bold',
+              },
+              unmountOnBlur: true,
+            })}
+          >
+            <Tab.Screen
+              name="Link"
+              component={LinkNavigator}
+              options={{
+                headerShown: false,
+              }}
+            />
+            <Tab.Screen
+              name="Transactions"
+              component={TransactionNavigator}
+              options={{
+                headerShown: false,
+              }}
+            />
+            <Tab.Screen name="Settings" component={SettingsScreen} />
+          </Tab.Navigator>
+        )}
+      </PostHogProvider>
     </NavigationContainer>
   )
 }

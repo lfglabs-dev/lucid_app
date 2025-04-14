@@ -41,7 +41,7 @@ export const formatAmount = (amount: string | number): string => {
 
   // Format decimal part with up to 6 significant digits
   const significantDecimals = Number('0.' + decimalPart)
-    .toFixed(6)
+    .toFixed(4)
     .slice(2)
     .replace(/0+$/, '')
 

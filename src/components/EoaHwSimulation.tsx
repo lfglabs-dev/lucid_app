@@ -1,5 +1,5 @@
 import React from 'react'
-import { View, Text, StyleSheet } from 'react-native'
+import { View, Text, StyleSheet, Image } from 'react-native'
 import { formatAddress } from '../services/utils'
 
 interface EoaHwSimulationProps {
@@ -14,10 +14,10 @@ export const EoaHwSimulation: React.FC<EoaHwSimulationProps> = ({
   return (
     <>
       <View style={styles.header}>
-        <Text style={styles.title}>Verify data on your Hardware Wallet</Text>
+        <Text style={styles.title}>Hardware Wallet Simulation</Text>
         <Text style={styles.subtitle}>
-          Verify the first and last 4 characters on your hardware wallet hashes
-          of the `to` address
+          Verify the first and last 4 characters on your hardware wallet
+          hashes{' '}
         </Text>
       </View>
       <View style={styles.section}>
@@ -27,11 +27,19 @@ export const EoaHwSimulation: React.FC<EoaHwSimulationProps> = ({
             {formatAddress(transactionHash)}
           </Text>
         </View> */}
-        <Text style={styles.sectionTitle}>To Address</Text>
         <View style={styles.hashContainer}>
+          <Text style={styles.sectionTitle}>To Address</Text>
+
           <Text style={styles.hashHighlightDomainHash}>
             {formatAddress(to)}
           </Text>
+        </View>
+        <View style={styles.imageContainer}>
+          <Image
+            source={require('../../assets/onboarding/no_transactions.png')}
+            style={styles.image}
+            resizeMode="contain"
+          />
         </View>
       </View>
     </>
@@ -59,12 +67,12 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 18,
     fontWeight: 'bold',
-    marginBottom: 12,
     color: '#212529',
   },
   hashContainer: {
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'space-between',
     backgroundColor: '#f8f9fa',
     padding: 16,
     borderRadius: 8,
@@ -85,5 +93,16 @@ const styles = StyleSheet.create({
     backgroundColor: '#e8d5ff',
     padding: 4,
     borderRadius: 4,
+  },
+  imageContainer: {
+    width: '100%',
+    height: 230,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderRadius: 10,
+  },
+  image: {
+    width: '100%',
+    height: '100%',
   },
 })

@@ -3,16 +3,17 @@ import { View, StyleSheet, Share, Text, Alert } from 'react-native'
 import { Ionicons } from '@expo/vector-icons'
 import { useOnboarding } from '../hooks/useOnboarding'
 import { WelcomeScreen } from '../components/onboarding/WelcomeScreen'
+import { HardwareWalletScreen } from '../components/onboarding/HardwareWalletScreen'
+import { EnableNotificationsScreen } from '../components/onboarding/EnableNotificationsScreen'
 import { InstallExtensionScreen } from '../components/onboarding/InstallExtensionScreen'
 import { ScanQRScreen } from '../components/onboarding/ScanQRScreen'
-import { EnableNotificationsScreen } from '../components/onboarding/EnableNotificationsScreen'
 import { SuccessScreen } from '../components/onboarding/SuccessScreen'
 import { CHROME_EXTENSION_URL, SHARE_MESSAGE } from '../constants/api'
 
 export const FirstTimeOnboardingFlow = () => {
   const { completeOnboarding } = useOnboarding()
   const [currentScreen, setCurrentScreen] = useState(0)
-  const totalScreens = 5
+  const totalScreens = 6
 
   const handleNext = () => {
     if (currentScreen < totalScreens - 1) {
@@ -53,12 +54,7 @@ export const FirstTimeOnboardingFlow = () => {
       case 0:
         return <WelcomeScreen onMainAction={handleNext} />
       case 1:
-        return (
-          <InstallExtensionScreen
-            onMainAction={handleSendLink}
-            onSecondaryAction={handleNext}
-          />
-        )
+        return <HardwareWalletScreen onMainAction={handleNext} />
       case 2:
         return (
           <EnableNotificationsScreen
@@ -68,12 +64,19 @@ export const FirstTimeOnboardingFlow = () => {
         )
       case 3:
         return (
+          <InstallExtensionScreen
+            onMainAction={handleSendLink}
+            onSecondaryAction={handleNext}
+          />
+        )
+      case 4:
+        return (
           <ScanQRScreen
             onMainAction={handleNext}
             onSecondaryAction={handleNext}
           />
         )
-      case 4:
+      case 5:
         return <SuccessScreen onMainAction={handleNext} />
       default:
         return <WelcomeScreen onMainAction={handleNext} />
@@ -166,7 +169,7 @@ const styles = StyleSheet.create({
     color: 'white',
   },
   line: {
-    width: 40,
+    width: 30,
     height: 2,
     backgroundColor: '#E0E0E0',
     marginHorizontal: 5,
