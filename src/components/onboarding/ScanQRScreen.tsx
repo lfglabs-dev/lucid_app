@@ -1,10 +1,18 @@
 import React, { useState, useRef } from 'react'
-import { View, Text, StyleSheet, TouchableOpacity, Alert } from 'react-native'
+import {
+  View,
+  Text,
+  StyleSheet,
+  TouchableOpacity,
+  Alert,
+  Image,
+} from 'react-native'
 import { CameraView, useCameraPermissions } from 'expo-camera'
 import { useIsFocused } from '@react-navigation/native'
 import { getCurrentAuthToken } from '../../services/auth'
 import { API_BASE_URL } from '../../constants/api'
 import { storeDecryptionKey } from '../../services/secureStorage'
+import { Ionicons } from '@expo/vector-icons'
 
 interface ScanQRScreenProps {
   onMainAction: () => void
@@ -174,12 +182,25 @@ export const ScanQRScreen = ({
 
   if (!permission.granted) {
     return (
-      <View style={styles.container}>
-        <Text style={styles.permissionText}>
-          Camera permission is required to scan QR codes
-        </Text>
+      <View style={styles.screenContainer}>
+        <View style={styles.contentContainer}>
+          <Text style={styles.title}>Scan your QR and link your extension</Text>
+          <Text style={styles.body}>
+            By scanning your extension QR code, you link your laptop wallets to
+            your Lucid app to simulate transactions.
+          </Text>
+
+          <View style={styles.imageContainer}>
+            <Image
+              source={require('../../../assets/onboarding/qr_screen.png')}
+              style={styles.image}
+              resizeMode="contain"
+            />
+          </View>
+        </View>
         <TouchableOpacity style={styles.button} onPress={requestPermission}>
-          <Text style={styles.buttonText}>Grant Camera Permission</Text>
+          <Text style={styles.buttonText}>Scan QR code</Text>
+          <Ionicons name="arrow-forward" size={20} color="#fff" />
         </TouchableOpacity>
         <TouchableOpacity style={styles.linkButton} onPress={onSecondaryAction}>
           <Text style={styles.linkText}>Skip for now</Text>
@@ -296,28 +317,6 @@ const styles = StyleSheet.create({
     marginBottom: 20,
     padding: 20,
   },
-  button: {
-    backgroundColor: '#007AFF',
-    padding: 16,
-    borderRadius: 8,
-    alignItems: 'center',
-    marginHorizontal: 20,
-    marginBottom: 10,
-  },
-  buttonText: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  linkButton: {
-    marginTop: 10,
-    marginBottom: 35,
-    alignItems: 'center',
-  },
-  linkText: {
-    color: 'grey',
-    fontSize: 15,
-  },
   instructionsContainer: {
     backgroundColor: '#fff',
     padding: 20,
@@ -336,5 +335,63 @@ const styles = StyleSheet.create({
     color: '#333',
     fontSize: 14,
     lineHeight: 20,
+  },
+  screenContainer: {
+    flex: 1,
+    padding: 20,
+    justifyContent: 'space-between',
+  },
+  contentContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  title: {
+    fontSize: 28,
+    fontWeight: 'bold',
+    marginBottom: 20,
+    textAlign: 'center',
+  },
+  body: {
+    fontSize: 16,
+    lineHeight: 24,
+    textAlign: 'center',
+    marginBottom: 20,
+  },
+  imageContainer: {
+    width: '110%',
+    height: 230,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderRadius: 10,
+  },
+  image: {
+    width: '100%',
+    height: '100%',
+  },
+
+  button: {
+    backgroundColor: '#007AFF',
+    padding: 16,
+    borderRadius: 8,
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 10,
+  },
+  buttonText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: 'bold',
+    marginRight: 8,
+  },
+  linkButton: {
+    marginTop: 10,
+    marginBottom: 35,
+  },
+  linkText: {
+    color: 'grey',
+    textAlign: 'center',
+    fontSize: 15,
   },
 })

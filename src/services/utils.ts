@@ -1,7 +1,7 @@
 import { WordArray } from 'crypto-es/lib/core'
 import { ethers } from 'ethers'
 import { EIP712SafeTx, EoaTx, Transaction } from '../types'
-import { CHAINS } from '../constants/api'
+import { CHAINS, RPC_URL } from '../constants/api'
 
 export const formatAddress = (address: string) => {
   if (address === 'yourself') {
@@ -10,7 +10,10 @@ export const formatAddress = (address: string) => {
   return address.slice(0, 4) + '...' + address.slice(-2)
 }
 
-export const formatAmount = (amount: string | number): string => {
+export const formatAmount = (
+  amount: string | number,
+  decimal: number = 6
+): string => {
   const num = Number(amount)
 
   // Handle very small numbers (less than 0.000001)
@@ -40,10 +43,16 @@ export const formatAmount = (amount: string | number): string => {
   }
 
   // Format decimal part with up to 6 significant digits
-  const significantDecimals = Number('0.' + decimalPart)
-    .toFixed(4)
-    .slice(2)
-    .replace(/0+$/, '')
+  const significantDecimals =
+    decimal <= 6
+      ? Number('0.' + decimalPart)
+          .toFixed(2)
+          .slice(2)
+          .replace(/0+$/, '')
+      : Number('0.' + decimalPart)
+          .toFixed(4)
+          .slice(2)
+          .replace(/0+$/, '')
 
   return `${wholePart}.${significantDecimals}`
 }

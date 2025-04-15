@@ -71,7 +71,8 @@ export const SimulationView = ({ simulationData }: SimulationViewProps) => {
                     ? '-'
                     : '+'
                   : 'Approve '}
-                {formatAmount(change.amount)} {change.assetSymbol}{' '}
+                {formatAmount(change.amount, change.assetDecimals)}{' '}
+                {change.assetSymbol}{' '}
               </Text>
               {change?.warning ? (
                 <Text style={styles.warning}>
@@ -133,11 +134,13 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
+    flexWrap: 'wrap',
   },
   changeContentWithWarning: {
     flexDirection: 'column',
     alignItems: 'flex-start',
     gap: 8,
+    flexWrap: 'wrap',
   },
   changeAmount: {
     fontSize: 25,

@@ -5,7 +5,7 @@ import {
   StyleSheet,
   TouchableOpacity,
   Alert,
-  Dimensions,
+  Image,
 } from 'react-native'
 import { CameraView, useCameraPermissions } from 'expo-camera'
 import { getCurrentAuthToken } from '../services/auth'
@@ -13,7 +13,7 @@ import { API_BASE_URL } from '../constants/api'
 import { SuccessView } from '../components/SuccessView'
 import { useIsFocused } from '@react-navigation/native'
 import { storeDecryptionKey } from '../services/secureStorage'
-
+import { Ionicons } from '@expo/vector-icons'
 export const LinkDeviceScreen = () => {
   const [permission, requestPermission] = useCameraPermissions()
   const [isProcessing, setIsProcessing] = useState(false)
@@ -174,18 +174,26 @@ export const LinkDeviceScreen = () => {
 
   if (!permission.granted) {
     return (
-      <View style={styles.container}>
-        <Text style={styles.permissionText}>
-          Camera permission is required to scan QR codes
+    <View style={styles.screenContainer}>
+      <View style={styles.contentContainer}>
+
+
+        <View style={styles.imageContainer}>
+          <Image
+            source={require('../../assets/onboarding/qr_screen.png')}
+            style={styles.image}
+            resizeMode="contain"
+          />
+        </View>
+                <Text style={styles.titleNoPermission}>Scan your extension QR code</Text>
+        <Text style={styles.bodyNoPermission}>
+          By scanning your extension QR code, you link your laptop wallets to your Lucid app and you'll be able to simulate all your transactions.
         </Text>
-        <TouchableOpacity
-          style={styles.permissionButton}
-          onPress={requestPermission}
-        >
-          <Text style={styles.permissionButtonText}>
-            Grant Camera Permission
-          </Text>
-        </TouchableOpacity>
+      </View>
+      <TouchableOpacity style={styles.button} onPress={requestPermission}>
+        <Text style={styles.buttonText}>Scan QR code</Text>
+        <Ionicons name="arrow-forward" size={20} color="#fff" />
+      </TouchableOpacity>
       </View>
     )
   }
@@ -390,5 +398,65 @@ const styles = StyleSheet.create({
   processingText: {
     color: '#fff',
     fontSize: 18,
+  },
+
+  screenContainer: {
+    flex: 1,
+    padding: 20,
+    justifyContent: 'space-between',
+  },
+  contentContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  titleNoPermission: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: '#333',
+    marginBottom: 8,
+    textAlign: 'center',
+  },
+  bodyNoPermission: {
+    fontSize: 16,
+    color: '#666',
+    textAlign: 'center',
+  },
+  imageContainer: {
+    width: '100%',
+    height: 230,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderRadius: 10,
+    marginTop: 20,
+  },
+  image: {
+    width: '100%',
+    height: '100%',
+  },
+
+  button: {
+    backgroundColor: '#007AFF',
+    padding: 16,
+    borderRadius: 8,
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 10,
+  },
+  buttonText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: 'bold',
+    marginRight: 8,
+  },
+  linkButton: {
+    marginTop: 10,
+    marginBottom: 35,
+  },
+  linkText: {
+    color: 'grey',
+    textAlign: 'center',
+    fontSize: 15,
   },
 })
