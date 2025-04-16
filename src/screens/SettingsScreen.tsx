@@ -7,11 +7,10 @@ import {
   TouchableOpacity,
   Alert,
 } from 'react-native'
-import { ClearSigningSection } from '../components/settings/ClearSigningSection'
 import { LinkedDevicesSection } from '../components/settings/LinkedDevicesSection'
 import { AboutSection } from '../components/settings/AboutSection'
-import { RpcSection } from '../components/settings/RpcSection'
 import { AddressLabelsSection } from '../components/settings/AddressLabelsSection'
+import { AdvancedSettings } from '../components/settings/AdvancedSettings'
 import { useStore } from '../store/useStore'
 import { clearSecureStorage } from '../services/secureStorage'
 
@@ -59,8 +58,7 @@ export const SettingsScreen = () => {
     <ScrollView style={styles.container}>
       <AddressLabelsSection />
       <LinkedDevicesSection />
-      <ClearSigningSection />
-      <RpcSection />
+      <AdvancedSettings />
       <AboutSection />
 
       {/* Developer Tools Section */}

@@ -11,6 +11,17 @@ import { Ionicons } from '@expo/vector-icons'
 import { Transaction } from '../types'
 import { useStore } from '../store/useStore'
 import { PostHogProvider } from 'posthog-react-native'
+import { NotificationProvider } from '../context/NotificationContext'
+import * as Notifications from 'expo-notifications'
+
+Notifications.setNotificationHandler({
+  handleNotification: async () => ({
+    shouldShowAlert: true,
+    shouldPlaySound: true,
+    shouldSetBadge: true,
+  }),
+});
+
 
 export type RootTabParamList = {
   Transactions: undefined
@@ -71,9 +82,10 @@ export const AppNavigator = () => {
           host: 'https://us.i.posthog.com',
         }}
       >
-        {!hasCompletedOnboarding ? (
-          <FirstTimeOnboardingFlow />
-        ) : (
+        <NotificationProvider>
+          {!hasCompletedOnboarding ? (
+            <FirstTimeOnboardingFlow />
+          ) : (
           <Tab.Navigator
             initialRouteName="Transactions"
             screenOptions={({ route }) => ({
@@ -119,8 +131,9 @@ export const AppNavigator = () => {
               }}
             />
             <Tab.Screen name="Settings" component={SettingsScreen} />
-          </Tab.Navigator>
-        )}
+            </Tab.Navigator>
+          )}
+        </NotificationProvider>
       </PostHogProvider>
     </NavigationContainer>
   )

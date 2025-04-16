@@ -36,19 +36,6 @@ export const FirstTimeOnboardingFlow = () => {
     }
   }
 
-  const handleEnableNotifications = async () => {
-    Alert.alert(
-      'Enable Notifications',
-      'Please enable notifications in your device settings to receive alerts about transactions.',
-      [
-        {
-          text: 'OK',
-          onPress: handleNext,
-        },
-      ]
-    )
-  }
-
   const renderScreen = () => {
     switch (currentScreen) {
       case 0:
@@ -58,7 +45,7 @@ export const FirstTimeOnboardingFlow = () => {
       case 2:
         return (
           <EnableNotificationsScreen
-            onMainAction={handleEnableNotifications}
+            onMainAction={handleNext}
             onSecondaryAction={handleNext}
           />
         )
