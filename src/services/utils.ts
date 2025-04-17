@@ -1,7 +1,7 @@
 import { WordArray } from 'crypto-es/lib/core'
 import { ethers } from 'ethers'
 import { EIP712SafeTx, EoaTx, Transaction } from '../types'
-import { CHAINS, RPC_URL } from '../constants/api'
+import { CHAINS } from '../constants/api'
 
 export const formatAddress = (address: string) => {
   if (address === 'yourself') {
@@ -133,18 +133,10 @@ export const forgeTransaction = (
     fromAddress = isSafeTx
       ? toHexAddress(tx.safeAddress)
       : toHexAddress(tx.from)
-  } catch (error) {
-    console.warn(
-      `Error processing 'from' address for transaction ${requestId}:`,
-      error
-    )
-  }
-
-  try {
     toAddress = toHexAddress(tx.to)
   } catch (error) {
     console.warn(
-      `Error processing 'to' address for transaction ${requestId}:`,
+      `Error processing 'from' address for transaction ${requestId}:`,
       error
     )
   }
@@ -154,19 +146,18 @@ export const forgeTransaction = (
     status: 'pending',
     requestType: isSafeTx ? 'eip712' : 'eoa_transaction',
     timestamp: new Date(creationDate).getTime(),
-
     chainId: toHexNumber(tx.chainId),
     from: fromAddress,
     to: toAddress,
     value: toHexNumber(tx.value),
     data: toHexBytes(tx.data),
-
     gas: toHexNumber(isSafeTx ? DEFAULT_GAS_LIMIT : tx.gas),
     maxFeePerGas: toHexNumber(isSafeTx ? DEFAULT_GAS_PRICE : tx.maxFeePerGas),
     maxPriorityFeePerGas: toHexNumber(
       isSafeTx ? DEFAULT_GAS_PRICE : tx.maxPriorityFeePerGas
     ),
     nonce: toHexNumber(tx.nonce),
+    originalSigner: tx.from,
   }
 }
 

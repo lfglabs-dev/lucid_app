@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import { View, StyleSheet, ScrollView, Text } from 'react-native'
 import { RouteProp, useRoute, useNavigation } from '@react-navigation/native'
-import { Transaction, VerificationStep } from '../types'
+import { CoverResult, Transaction, VerificationStep } from '../types'
 import { TransactionStackParamList } from '../navigation/AppNavigator'
 import { NativeStackNavigationProp } from '@react-navigation/native-stack'
 import { useStore } from '../store/useStore'
@@ -42,6 +42,8 @@ export const TransactionSimulation = () => {
   const [domainHash, setDomainHash] = useState<string>('0x0')
   const [messageHash, setMessageHash] = useState<string>('0x0')
   const [transactionHash, setTransactionHash] = useState<string>('0x0')
+  const [coverResult, setCoverResult] = useState<CoverResult | undefined>()
+  const [coverError, setCoverError] = useState<string | undefined>()
   const { ledgerHashCheckEnabled } = useStore((state) => state.settings)
   const posthog = usePostHog()
 
@@ -93,7 +95,6 @@ export const TransactionSimulation = () => {
           })
 
           // Track simulation error
-          console.log('supposed to be here')
           posthog?.capture('transaction_simulation_error', {
             wallet_type: transaction.requestType === 'eip712' ? 'Safe' : 'EOA',
             chain_id: transaction.chainId,
@@ -142,6 +143,45 @@ export const TransactionSimulation = () => {
 
     simulateTransaction()
   }, [transaction])
+
+  // Separate useEffect for cover functionality
+  useEffect(() => {
+    const getCover = async () => {
+      // Only run cover for Safe transactions
+      if (transaction.requestType !== 'eip712') {
+        return
+      }
+
+      try {
+        setCoverError(undefined)
+        const txSimulation = new SafeSimulation(transaction)
+        const coverResult = await txSimulation.cover()
+        setCoverResult(coverResult.result)
+
+        // Track successful cover
+        posthog?.capture('transaction_cover', {
+          wallet_type: 'Safe',
+          chain_id: transaction.chainId,
+          status: 'success',
+        })
+      } catch (err) {
+        console.error('Cover error (non-fatal):', err)
+        setCoverError(
+          err instanceof Error ? err.message : 'Failed to get cover'
+        )
+
+        // Track cover error
+        posthog?.capture('transaction_cover_error', {
+          wallet_type: 'Safe',
+          chain_id: transaction.chainId,
+          error_message:
+            err instanceof Error ? err.message : 'Failed to get cover',
+        })
+      }
+    }
+
+    getCover()
+  }, [transaction, posthog])
 
   const handleConfirm = () => {
     if (currentStep === 'simulation') {
@@ -214,6 +254,8 @@ export const TransactionSimulation = () => {
           transactionHash={transactionHash}
           simulationData={simulationData!}
           currentStep={currentStep}
+          coverResult={coverResult}
+          coverError={coverError}
         />
       </ScrollView>
       <ConfirmVerification

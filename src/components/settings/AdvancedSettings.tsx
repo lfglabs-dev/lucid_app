@@ -14,11 +14,7 @@ import { useNotification } from '../../context/NotificationContext'
 export const AdvancedSettings = () => {
   const [notificationsEnabled, setNotificationsEnabled] = useState(false)
   const { expoPushToken, requestPermissions } = useNotification()
-  const {
-    settings,
-    setCustomRpcUrl,
-    toggleLedgerHashCheck,
-  } = useStore()
+  const { settings, setCustomRpcUrl, toggleLedgerHashCheck } = useStore()
 
   const handleEditRpc = () => {
     Alert.prompt(
@@ -68,7 +64,7 @@ export const AdvancedSettings = () => {
 
   useEffect(() => {
     setNotificationsEnabled(Boolean(expoPushToken))
-  }, [expoPushToken]);
+  }, [expoPushToken])
 
   return (
     <View style={styles.section}>
@@ -84,10 +80,10 @@ export const AdvancedSettings = () => {
         <View style={styles.settingRow}>
           <Text style={styles.settingLabel}>Enable Notifications</Text>
           <Switch
-          value={notificationsEnabled}
-          onValueChange={handleEnableNotifications}
-        />
-      </View>
+            value={notificationsEnabled}
+            onValueChange={handleEnableNotifications}
+          />
+        </View>
       )}
       <TouchableOpacity
         style={styles.rpcItem}

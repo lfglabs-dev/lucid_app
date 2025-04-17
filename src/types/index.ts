@@ -31,7 +31,7 @@ export interface Transaction {
   maxFeePerGas: string
   maxPriorityFeePerGas: string
   nonce: string
-  originalSafeTx?: EIP712SafeTx
+  originalSigner: string
 }
 
 export interface EIP712SafeTx {
@@ -116,11 +116,12 @@ export interface SimulationResponse {
 export type AssetChangeDirection = 'decrease' | 'increase'
 export type AssetChangeType = 'approval' | 'transfer'
 
-export type AssetChanges = {
+export type AssetChange = {
   type: AssetChangeType
   direction: AssetChangeDirection
   assetIcon: string
   assetSymbol: string
+  assetDecimals: number
   amount: string
   from?: string
   to?: string
@@ -131,10 +132,24 @@ export interface SimulationData {
   contractAddress: string
   from: string
   to: string
-  changes: AssetChanges[]
+  changes: AssetChange[]
   chainId: string
   operation: string
   requestType: RequestType
 }
 
 export type VerificationStep = 'simulation' | 'verification' | 'success'
+
+export interface CurrencyValue {
+  amount: string
+  currency: string
+}
+
+export interface CoverResult {
+  policyId: string
+  policyExpiry: number
+  estimatedTxValue: CurrencyValue
+  coveredTxValue: CurrencyValue
+  coveredWallet: string
+  signature: string
+}
