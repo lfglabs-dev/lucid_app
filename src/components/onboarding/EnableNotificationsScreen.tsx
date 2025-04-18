@@ -22,12 +22,8 @@ export const EnableNotificationsScreen = ({
   const { requestPermissions } = useNotification()
 
   const handleEnableNotifications = async () => {
-    console.log('👋 User initiated notification permission request')
     const token = await requestPermissions()
     if (token) {
-      console.log(
-        '✅ Notification permission granted, proceeding with onboarding'
-      )
       onMainAction()
     } else {
       Alert.alert(

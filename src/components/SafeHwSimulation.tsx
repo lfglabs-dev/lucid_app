@@ -93,14 +93,14 @@ const styles = StyleSheet.create({
     borderRadius: 4,
   },
   imageContainer: {
-    width: '120%',
-    height: 300,
+    width: '100%',
+    height: 230,
     justifyContent: 'center',
     alignItems: 'center',
     borderRadius: 10,
   },
   image: {
-    width: '120%',
-    height: '120%',
+    width: '100%',
+    height: '100%',
   },
 })
