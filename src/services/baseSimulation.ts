@@ -5,7 +5,7 @@ import {
   SimulationResponse,
   SimulationData,
   EthereumLog,
-  AssetChanges,
+  AssetChange,
   Transaction,
   RequestType,
 } from '../types'
@@ -209,7 +209,6 @@ export abstract class BaseSimulation {
         return null
       }
       const call = response.result[0].calls[0]
-      console.log('Simulation Call Response', call?.logs?.[0]?.topics)
 
       if (call.error) {
         console.error('Call error:', call.error)
@@ -223,7 +222,7 @@ export abstract class BaseSimulation {
       }
 
       const eventsByToken = this.groupEventsByToken(call.logs || [])
-      const allChanges: AssetChanges[] = []
+      const allChanges: AssetChange[] = []
 
       for (const [tokenAddress, events] of Object.entries(eventsByToken)) {
         // Update the TokenInfoService chainId before getting token metadata
@@ -238,12 +237,48 @@ export abstract class BaseSimulation {
           (log) => log.topics && log.topics[0] === this.TRANSFER_EVENT_SIGNATURE
         )
         const approvalEvents = events.filter(
-          (log) => log.topics && log.topics[0] === this.APPROVAL_EVENT_SIGNATURE
+          (log) =>
+            log.topics &&
+            log.topics[0] === this.APPROVAL_EVENT_SIGNATURE &&
+            log.topics.length >= 3 &&
+            '0x' + log.topics[1].slice(26).toLowerCase() ===
+              this.from.toLowerCase()
         )
 
+        // Deduplicate approval events
+        const uniqueApprovalEvents = approvalEvents.reduce((unique, event) => {
+          // Create a key based on owner, spender, and amount
+          const key = `${event.topics[1]}-${event.topics[2]}-${event.data}`
+          if (!unique.has(key)) {
+            unique.set(key, event)
+          }
+          return unique
+        }, new Map())
+
         console.log(
-          `Found ${transferEvents.length} transfer events and ${approvalEvents.length} approval events`
+          `Found ${transferEvents.length} transfer events and ${approvalEvents.length} approval events (${uniqueApprovalEvents.size} unique)`
         )
+
+        // Use the deduplicated approval events
+        for (const event of Array.from(uniqueApprovalEvents.values())) {
+          // Make sure we have enough topics
+          if (!event.topics || event.topics.length < 3) {
+            console.error('Invalid approval event format:', event)
+            continue
+          }
+
+          const amount = BigInt(event.data)
+          const formattedAmount = ethers.formatUnits(amount, token.decimals)
+
+          allChanges.push({
+            type: 'approval',
+            direction: 'increase',
+            assetIcon: token.icon,
+            assetSymbol: token.symbol,
+            assetDecimals: token.decimals,
+            amount: formattedAmount,
+          })
+        }
 
         for (const event of transferEvents) {
           // Make sure we have enough topics
@@ -266,31 +301,13 @@ export abstract class BaseSimulation {
               direction: isIncrease ? 'increase' : 'decrease',
               assetIcon: token.icon,
               assetSymbol: token.symbol,
+              assetDecimals: token.decimals,
               amount: formattedAmount,
               warning: token.warning,
               from: from,
               to: to,
             })
           }
-        }
-
-        for (const event of approvalEvents) {
-          // Make sure we have enough topics
-          if (!event.topics || event.topics.length < 3) {
-            console.error('Invalid approval event format:', event)
-            continue
-          }
-
-          const amount = BigInt(event.data)
-          const formattedAmount = ethers.formatUnits(amount, token.decimals)
-
-          allChanges.push({
-            type: 'approval',
-            direction: 'increase',
-            assetIcon: token.icon,
-            assetSymbol: token.symbol,
-            amount: formattedAmount,
-          })
         }
       }
 

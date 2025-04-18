@@ -4,7 +4,7 @@ import { SimulationView } from './SimulationView'
 import { EoaHwSimulation } from './EoaHwSimulation'
 import { SafeHwSimulation } from './SafeHwSimulation'
 import { SuccessView } from './SuccessView'
-import { VerificationStep, SimulationData } from '../types'
+import { VerificationStep, SimulationData, CoverResult } from '../types'
 
 interface TransactionVerificationsViewProps {
   currentStep: VerificationStep
@@ -12,6 +12,8 @@ interface TransactionVerificationsViewProps {
   messageHash: string
   domainHash: string
   transactionHash: string
+  coverResult?: CoverResult
+  coverError?: string
 }
 
 export const TransactionVerificationsView = ({
@@ -20,6 +22,8 @@ export const TransactionVerificationsView = ({
   messageHash,
   domainHash,
   transactionHash,
+  coverResult,
+  coverError,
 }: TransactionVerificationsViewProps) => {
   const isEoaTransaction = simulationData?.requestType === 'eoa_transaction'
 

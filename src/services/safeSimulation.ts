@@ -1,7 +1,11 @@
 import { ethers } from 'ethers'
 import { TokenInfoService } from './tokenInfo'
 import { useStore } from '../store/useStore'
-import { SimulationResponse, SimulationData, Transaction } from '../types'
+import {
+  SimulationResponse,
+  SimulationData,
+  Transaction,
+} from '../types'
 import { BaseSimulation, SimulationError } from './baseSimulation'
 import { toHexAddress } from './utils'
 
@@ -20,6 +24,28 @@ export class SafeSimulation extends BaseSimulation {
     '0x608060405273ffffffffffffffffffffffffffffffffffffffff600054167fa619486e0000000000000000000000000000000000000000000000000000000060003514156050578060005260206000f35b3660008037600080366000845af43d6000803e60008114156070573d6000fd5b3d6000f3fea2646970667358221220d1429297349653a4918076d650332de1a1068c5f3e07c5c82360c277770b955264736f6c63430007060033'
   private readonly SAFE_PROXY_BYTECODE_IMP =
     '0x6080604052600436106100225760003560e01c80639fe839781461004957610023565b5b629205153660008037600080366000845af43d6000803e80610044573d6000fd5b3d6000f35b610063600480360381019061005e91906102eb565b610079565b60405161007091906103c6565b60405180910390f35b60606000808473ffffffffffffffffffffffffffffffffffffffff16846040516100a39190610424565b600060405180830381855af49150503d80600081146100de576040519150601f19603f3d011682016040523d82523d6000602084013e6100e3565b606091505b509150915081610128576040517f08c379a000000000000000000000000000000000000000000000000000000000815260040161011f90610498565b60405180910390fd5b809250505092915050565b6000604051905090565b600080fd5b600080fd5b600073ffffffffffffffffffffffffffffffffffffffff82169050919050565b600061017282610147565b9050919050565b61018281610167565b811461018d57600080fd5b50565b60008135905061019f81610179565b92915050565b600080fd5b600080fd5b6000601f19601f8301169050919050565b7f4e487b7100000000000000000000000000000000000000000000000000000000600052604160045260246000fd5b6101f8826101af565b810181811067ffffffffffffffff82111715610217576102166101c0565b5b80604052505050565b600061022a610133565b905061023682826101ef565b919050565b600067ffffffffffffffff821115610256576102556101c0565b5b61025f826101af565b9050602081019050919050565b82818337600083830152505050565b600061028e6102898461023b565b610220565b9050828152602081018484840111156102aa576102a96101aa565b5b6102b584828561026c565b509392505050565b600082601f8301126102d2576102d16101a5565b5b81356102e284826020860161027b565b91505092915050565b600080604083850312156103025761030161013d565b5b600061031085828601610190565b925050602083013567ffffffffffffffff81111561033157610330610142565b5b61033d858286016102bd565b9150509250929050565b600081519050919050565b600082825260208201905092915050565b60005b83811015610381578082015181840152602081019050610366565b60008484015250505050565b600061039882610347565b6103a28185610352565b93506103b2818560208601610363565b6103bb816101af565b840191505092915050565b600060208201905081810360008301526103e0818461038d565b905092915050565b600081905092915050565b60006103fe82610347565b61040881856103e8565b9350610418818560208601610363565b80840191505092915050565b600061043082846103f3565b915081905092915050565b600082825260208201905092915050565b7f44656c65676174652063616c6c206661696c6564000000000000000000000000600082015250565b600061048260148361043b565b915061048d8261044c565b602082019050919050565b600060208201905081810360008301526104b181610475565b9050919050565b60006104c98261043b565b91506104d48261044c565b602082019050919050565b600060208201905081810360008301526104f8816104b1565b905091905056fea26469706673582212203e96f34ac95ff29da01f27c2e715937c3b3829ae9ffeb1111dd78145a79362dc64736f6c63430008120033'
+  // Safe contract ABI for the encodeTransactionData function
+  private readonly SAFE_ABI = [
+    {
+      inputs: [
+        { internalType: 'address', name: 'to', type: 'address' },
+        { internalType: 'uint256', name: 'value', type: 'uint256' },
+        { internalType: 'bytes', name: 'data', type: 'bytes' },
+        { internalType: 'uint8', name: 'operation', type: 'uint8' },
+        { internalType: 'uint256', name: 'safeTxGas', type: 'uint256' },
+        { internalType: 'uint256', name: 'baseGas', type: 'uint256' },
+        { internalType: 'uint256', name: 'gasPrice', type: 'uint256' },
+        { internalType: 'address', name: 'gasToken', type: 'address' },
+        { internalType: 'address', name: 'refundReceiver', type: 'address' },
+        { internalType: 'bytes', name: 'signatures', type: 'bytes' },
+      ],
+      name: 'execTransaction',
+      outputs: [{ internalType: 'bool', name: 'success', type: 'bool' }],
+      stateMutability: 'nonpayable',
+      type: 'function',
+    },
+  ]
+  protected readonly originalSigner: string
 
   constructor(
     transaction: Transaction,
@@ -28,6 +54,7 @@ export class SafeSimulation extends BaseSimulation {
     )
   ) {
     super(transaction, tokenInfoService)
+    this.originalSigner = transaction.originalSigner
   }
 
   private getSafeVersion(): string {
@@ -213,6 +240,147 @@ export class SafeSimulation extends BaseSimulation {
     }
 
     return result
+  }
+
+  /**
+   * @returns {Promise<string>} - The SafeExecTransaction object
+   */
+  private async computeSafeExecHash(): Promise<string> {
+    try {
+      // Create a provider
+      const rpcUrl = useStore.getState().getRpcUrlByChainId(this.chainId)
+      const provider = new ethers.JsonRpcProvider(rpcUrl)
+
+      // Generate a special signature
+      const signatures = ethers.concat([
+        ethers.zeroPadValue(this.originalSigner, 32), // r
+        ethers.toBeHex(0, 32), // s
+        ethers.toBeHex(1), // v
+      ])
+      // Create a contract instance for the Safe contract
+      const safeContract = new ethers.Contract(
+        this.originalSigner,
+        this.SAFE_ABI,
+        provider
+      )
+
+      // Call the encodeTransactionData function
+      console.log(
+        'args',
+        [
+          this.to,
+          this.value,
+          this.data,
+          this.isMulticall() ? '1' : '0', // operation
+          '0', // safeTxGas
+          '0', // baseGas
+          '0', // gasPrice
+          '0x0000000000000000000000000000000000000000', // gasToken
+          '0x0000000000000000000000000000000000000000', // refundReceiver
+          signatures,
+        ]
+      )
+
+      // Encode the execTransaction function
+      const encodedData = safeContract.interface.encodeFunctionData(
+        'execTransaction',
+        [
+          this.to,
+          this.value,
+          this.data,
+          this.isMulticall() ? '1' : '0', // operation
+          '0', // safeTxGas
+          '0', // baseGas
+          '0', // gasPrice
+          '0x0000000000000000000000000000000000000000', // gasToken
+          '0x0000000000000000000000000000000000000000', // refundReceiver
+          signatures,
+        ]
+      )
+
+      // Return the SafeExecTransaction format
+      return encodedData
+    } catch (error) {
+      console.error('Error computing Safe exec hash:', error)
+      throw error
+    }
+  }
+
+  /**
+   * Covers a Safe transaction with simulation and logging
+   * @returns Promise with the cover result
+   */
+  public async cover(): Promise<any> {
+    try {
+      console.log('Starting transaction cover process...')
+
+      // Run the cover simulation
+      const API_KEY = 'YOUR_API_KEY'
+
+      // Log transaction details
+      const safeExecHash = await this.computeSafeExecHash()
+      const safeExecTx = {
+        from: this.originalSigner,
+        to: this.from,
+        data: safeExecHash,
+        value: this.value,
+      }
+      // Prepare request payload
+      const requestPayload = {
+        chainId: parseInt(this.chainId, 16),
+        transaction: safeExecTx,
+        originUrl: 'https://lucid-website-one.vercel.app',
+      }
+
+      console.log('Sending cover request to OpenCover API...', requestPayload)
+
+      // Cover the transaction
+      const coverResponse = await fetch(
+        `https://api-sandbox.opencover.com/v1/transactions/cover`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-OC-ApiKey': API_KEY,
+          },
+          body: JSON.stringify(requestPayload),
+        }
+      )
+
+      if (!coverResponse.ok) {
+        // Try to get more error details from the response
+        let errorDetails = ''
+        try {
+          const errorResponse = await coverResponse.text()
+          errorDetails = errorResponse ? ` Response body: ${errorResponse}` : ''
+        } catch (e) {
+          errorDetails = ' Could not read error response body'
+        }
+
+        console.error('Cover API error details:', {
+          status: coverResponse.status,
+          statusText: coverResponse.statusText,
+          errorDetails,
+        })
+
+        throw new Error(
+          `Cover simulation failed: ${coverResponse.statusText}${errorDetails}`
+        )
+      }
+
+      const coverResult = await coverResponse.json()
+      console.log('Cover result:', coverResult)
+  
+
+      return false
+    } catch (error) {
+      console.error('Error in transaction cover:', error)
+      console.error(
+        'Error stack trace:',
+        error instanceof Error ? error.stack : 'No stack trace available'
+      )
+      throw new SimulationError('Failed to cover transaction')
+    }
   }
 
   async simulateTransaction(): Promise<SimulationData> {

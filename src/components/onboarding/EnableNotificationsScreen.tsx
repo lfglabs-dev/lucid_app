@@ -1,5 +1,12 @@
 import React from 'react'
-import { View, Text, StyleSheet, TouchableOpacity, Image, Alert } from 'react-native'
+import {
+  View,
+  Text,
+  StyleSheet,
+  TouchableOpacity,
+  Image,
+  Alert,
+} from 'react-native'
 import { Ionicons } from '@expo/vector-icons'
 import { useNotification } from '../../context/NotificationContext'
 
@@ -15,10 +22,8 @@ export const EnableNotificationsScreen = ({
   const { requestPermissions } = useNotification()
 
   const handleEnableNotifications = async () => {
-    console.log('👋 User initiated notification permission request');
     const token = await requestPermissions()
     if (token) {
-      console.log('✅ Notification permission granted, proceeding with onboarding');
       onMainAction()
     } else {
       Alert.alert(
@@ -51,7 +56,10 @@ export const EnableNotificationsScreen = ({
           />
         </View>
       </View>
-      <TouchableOpacity style={styles.button} onPress={handleEnableNotifications}>
+      <TouchableOpacity
+        style={styles.button}
+        onPress={handleEnableNotifications}
+      >
         <Text style={styles.buttonText}>Enable Notifications</Text>
         <Ionicons name="arrow-forward" size={20} color="#fff" />
       </TouchableOpacity>

@@ -174,26 +174,27 @@ export const LinkDeviceScreen = () => {
 
   if (!permission.granted) {
     return (
-    <View style={styles.screenContainer}>
-      <View style={styles.contentContainer}>
-
-
-        <View style={styles.imageContainer}>
-          <Image
-            source={require('../../assets/onboarding/qr_screen.png')}
-            style={styles.image}
-            resizeMode="contain"
-          />
+      <View style={styles.screenContainer}>
+        <View style={styles.contentContainer}>
+          <View style={styles.imageContainer}>
+            <Image
+              source={require('../../assets/onboarding/qr_screen.png')}
+              style={styles.image}
+              resizeMode="contain"
+            />
+          </View>
+          <Text style={styles.titleNoPermission}>
+            Scan your extension QR code
+          </Text>
+          <Text style={styles.bodyNoPermission}>
+            By scanning your extension QR code, you link your laptop wallets to
+            your Lucid app and you'll be able to simulate all your transactions.
+          </Text>
         </View>
-                <Text style={styles.titleNoPermission}>Scan your extension QR code</Text>
-        <Text style={styles.bodyNoPermission}>
-          By scanning your extension QR code, you link your laptop wallets to your Lucid app and you'll be able to simulate all your transactions.
-        </Text>
-      </View>
-      <TouchableOpacity style={styles.button} onPress={requestPermission}>
-        <Text style={styles.buttonText}>Scan QR code</Text>
-        <Ionicons name="arrow-forward" size={20} color="#fff" />
-      </TouchableOpacity>
+        <TouchableOpacity style={styles.button} onPress={requestPermission}>
+          <Text style={styles.buttonText}>Scan QR code</Text>
+          <Ionicons name="arrow-forward" size={20} color="#fff" />
+        </TouchableOpacity>
       </View>
     )
   }
